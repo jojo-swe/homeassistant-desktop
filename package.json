@@ -11,6 +11,7 @@
   "main": "app.js",
   "scripts": {
     "start": "electron app.js",
+    "build": "electron-builder build --publish never",
     "build-local-mac": "electron-builder build --mac --x64 --publish never",
     "build-local-mac-arm": "electron-builder build --mac --arm64 --publish never",
     "build-local-linux": "electron-builder build --linux appimage --x64 --publish never",

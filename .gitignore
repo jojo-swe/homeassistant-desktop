@@ -2,3 +2,7 @@ node_modules
 dist
 .idea
 .DS_Store
+dev-app-update.yml
+build/
+coverage/
+*.log
