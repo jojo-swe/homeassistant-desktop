@@ -2,7 +2,7 @@
   "name": "homeassistant-desktop",
   "repository": {
     "type": "git",
-    "url": "https://github.com/iprodanovbg/homeassistant-desktop"
+    "url": "https://github.com/jojo-swe/homeassistant-desktop"
   },
   "version": "1.5.4",
   "description": "Desktop App (Windows / macOS / Linux) for Home Assistant built with Electron",

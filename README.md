@@ -2,9 +2,9 @@
 
 A modernized Desktop App (Windows / macOS / Linux) for [Home Assistant](https://www.home-assistant.io/), built with [Electron](https://www.electronjs.org/).
 
-**This repository is an actively maintained fork** that modernizes the framework (Node.js 20+ & Electron 32+), radically improves application security via context isolation, and adds rich, two-way native OS integrations that go far beyond a simple webview.
+**This repository is an actively maintained, modernized standalone continuation** that updates the framework (Node.js 20+ & Electron 32+), radically improves application security via context isolation, and adds rich, two-way native OS integrations that go far beyond a simple webview.
 
-## 🚀 New Features in this Fork
+## 🚀 New Features in this Version
 
 - **Native OS Notifications Bridge**: Intercepts Home Assistant `persistent_notification` events via WebSocket and pushes them natively to the OS (Windows Action Center, macOS Notification Center). Clicking the notification brings the app window to focus.
 - **Quick-Action System Tray Menu**: Pin any Home Assistant entity (lights, switches, scripts) directly to your system tray context menu, allowing instant toggling without opening the full interface.
@@ -46,7 +46,7 @@ For a full list of changes in the latest releases, see the [CHANGELOG.md](./CHAN
 
 ## 📜 Credits & License
 
-This project is a fork built to keep the Desktop companion alive.
+This project is a standalone continuation built to keep the Desktop companion alive.
 Huge credit to the original authors who laid the groundwork:
 - [iprodanovbg/homeassistant-desktop](https://github.com/iprodanovbg/homeassistant-desktop)
 - [mrvnklm/homeassistant-desktop](https://github.com/mrvnklm/homeassistant-desktop) (Original prototype)
