@@ -1,68 +1,81 @@
-const {
-  app,
-  dialog,
-  ipcMain,
-  shell,
-  globalShortcut,
-  screen,
-  net,
-  Menu,
-  Tray,
-  BrowserWindow,
-  } = require('electron');
-const { autoUpdater } = require('electron-updater');
-const Positioner = require('electron-traywindow-positioner');
+/**
+ * app.js — Main process entry point (orchestrator)
+ *
+ * This file wires together the modular src/ components.
+ * Business logic lives in the individual modules:
+ *   src/window.js    — BrowserWindow lifecycle
+ *   src/tray.js      — System Tray & context menu
+ *   src/updater.js   — Auto-updater
+ *   src/ipc.js       — All ipcMain handlers
+ *   src/haClient.js  — HA REST API
+ *   src/systemMonitor.js — System telemetry
+ *   src/activeWindow.js  — Active window tracking
+ *   src/notifications.js — Native OS notifications
+ */
+
+const { app, BrowserWindow, globalShortcut, net } = require('electron');
 const Bonjour = require('bonjour-service');
-const bonjour = new Bonjour.Bonjour();
 const logger = require('electron-log');
 const config = require('./config');
-const SystemMonitor = require('./src/systemMonitor');
-const { showNotification } = require('./src/notifications');
-const { startTracking, getActiveWindow } = require('./src/activeWindow');
+
+// ── src modules ──────────────────────────────────────────────────────────────
+const windowManager = require('./src/window');
+const { createTray, getTray, getMenu } = require('./src/tray');
+const { useAutoUpdater, clearUpdateInterval, getUpdateCheckerInterval } = require('./src/updater');
+const { registerAll } = require('./src/ipc');
 const haClient = require('./src/haClient');
-const fs = require('fs');
-autoUpdater.logger = logger;
+const sensorPusher = require('./src/sensorPusher');
+const shortcutManager = require('./src/shortcutManager');
+
 logger.catchErrors();
-logger.info(`${app.name} started`);
+logger.info(`${app.getName()} started`);
 logger.info(`Platform: ${process.platform} ${process.arch}`);
 
-// hide dock icon on macOS
-if (process.platform === 'darwin') {
-  app.dock.hide();
+// ── Globals ──────────────────────────────────────────────────────────────────
+const bonjour = new Bonjour.Bonjour();
+
+let forceQuit = false;
+let autostartEnabled = false;
+let cachedEntities = [];
+let availabilityCheckerInterval;
+let settingsWindow = null;
+
+const SETTINGS_FILE = `file://${__dirname}/web/settings.html`;
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function currentInstance(url = null) {
+  if (url) config.set('currentInstance', config.get('allInstances').indexOf(url));
+  if (config.has('currentInstance')) return config.get('allInstances')[config.get('currentInstance')];
+  return false;
 }
 
-const indexFile = `file://${__dirname}/web/index.html`;
-const errorFile = `file://${__dirname}/web/error.html`;
+function addInstance(url) {
+  if (!config.has('allInstances')) config.set('allInstances', []);
+  let instances = config.get('allInstances');
+  if (instances.find(e => e === url)) { currentInstance(url); return; }
+  if (!instances.length) config.set('disableHover', false);
+  instances.push(url);
+  config.set('allInstances', instances);
+  currentInstance(url);
+}
 
-let initialized = false;
-let autostartEnabled = false;
-let forceQuit = false;
-let resizeEvent = false;
-let mainWindow;
-let settingsWindow = null;
-let tray;
-let updateCheckerInterval;
-let availabilityCheckerInterval;
-let cachedEntities = [];
-
-const settingsFile = `file://${__dirname}/web/settings.html`;
+function checkAutoStart() {
+  autostartEnabled = app.getLoginItemSettings().openAtLogin;
+}
 
 async function refreshEntityCache() {
   if (!haClient.isConfigured()) return;
   try {
-    const entities = await haClient.getToggleableEntities();
-    cachedEntities = entities;
-    logger.info(`Entity cache refreshed: ${entities.length} entities.`);
+    cachedEntities = await haClient.getToggleableEntities();
+    logger.info(`Entity cache refreshed: ${cachedEntities.length} entities.`);
   } catch (err) {
     logger.error('Failed to refresh entity cache:', err);
   }
 }
 
 function openSettingsWindow() {
-  if (settingsWindow) {
-    settingsWindow.focus();
-    return;
-  }
+  if (settingsWindow) { settingsWindow.focus(); return; }
 
   settingsWindow = new BrowserWindow({
     width: 420,
@@ -80,70 +93,21 @@ function openSettingsWindow() {
     },
   });
 
-  settingsWindow.loadURL(settingsFile);
+  settingsWindow.loadURL(SETTINGS_FILE);
   settingsWindow.on('closed', () => { settingsWindow = null; });
-}
-
-function registerKeyboardShortcut() {
-  globalShortcut.register('CommandOrControl+Alt+X', () => {
-    if (mainWindow.isVisible()) {
-      mainWindow.hide();
-    } else {
-      showWindow();
-    }
-  });
-}
-
-function unregisterKeyboardShortcut() {
-  globalShortcut.unregisterAll();
-}
-
-async function useAutoUpdater() {
-  autoUpdater.on('error', async (message) => {
-    logger.error('There was a problem updating the application');
-    logger.error(message);
-    clearInterval(updateCheckerInterval);
-  });
-
-  autoUpdater.on('update-downloaded', () => {
-    forceQuit = true;
-    autoUpdater.quitAndInstall();
-  });
-
-  if (!updateCheckerInterval && config.get('autoUpdate')) {
-    updateCheckerInterval = setInterval(checkForUpdates, 1000 * 60 * 60 * 4);
-  }
-
-  await checkForUpdates();
-}
-
-async function checkForUpdates() {
-  try {
-    await autoUpdater.checkForUpdates();
-  } catch (error) {
-    logger.error(error);
-    clearInterval(updateCheckerInterval);
-  }
-}
-
-function checkAutoStart() {
-  autostartEnabled = app.getLoginItemSettings().openAtLogin;
 }
 
 function availabilityCheck() {
   const instance = currentInstance();
+  if (!instance) return;
 
-  if (!instance) {
-    return;
-  }
-
-  let url = new URL(instance);
+  const url = new URL(instance);
   const request = net.request(`${url.origin}/auth/providers`);
 
   request.on('response', async (response) => {
     if (response.statusCode !== 200) {
       logger.error('Response error: ' + response);
-      await showError(true);
+      await windowManager.showError(true);
     }
   });
 
@@ -151,805 +115,121 @@ function availabilityCheck() {
     logger.error(error);
     clearInterval(availabilityCheckerInterval);
     availabilityCheckerInterval = null;
-    await showError(true);
+    await windowManager.showError(true);
 
-    if (config.get('automaticSwitching')) {
-      checkForAvailableInstance();
-    }
+    if (config.get('automaticSwitching')) checkForAvailableInstance();
   });
 
   request.end();
 }
 
-function changePosition() {
-  const trayBounds = tray.getBounds();
-  const windowBounds = mainWindow.getBounds();
-  const displayWorkArea = screen.getDisplayNearestPoint({
-    x: trayBounds.x,
-    y: trayBounds.y,
-  }).workArea;
-  const taskBarPosition = Positioner.getTaskbarPosition(trayBounds);
-
-  if (taskBarPosition === 'top' || taskBarPosition === 'bottom') {
-    const alignment = {
-      x: 'center',
-      y: taskBarPosition === 'top' ? 'up' : 'down',
-    };
-
-    if (trayBounds.x + (trayBounds.width + windowBounds.width) / 2 < displayWorkArea.width) {
-      Positioner.position(mainWindow, trayBounds, alignment);
-    } else {
-      const { y } = Positioner.calculate(mainWindow.getBounds(), trayBounds, alignment);
-
-      mainWindow.setPosition(
-        displayWorkArea.width - windowBounds.width + displayWorkArea.x,
-        y + (taskBarPosition === 'bottom' && displayWorkArea.y),
-        false,
-      );
-    }
-  } else {
-    const alignment = {
-      x: taskBarPosition,
-      y: 'center',
-    };
-
-    if (trayBounds.y + (trayBounds.height + windowBounds.height) / 2 < displayWorkArea.height) {
-      const { x, y } = Positioner.calculate(mainWindow.getBounds(), trayBounds, alignment);
-      mainWindow.setPosition(x + (taskBarPosition === 'right' && displayWorkArea.x), y);
-    } else {
-      const { x } = Positioner.calculate(mainWindow.getBounds(), trayBounds, alignment);
-      mainWindow.setPosition(x, displayWorkArea.y + displayWorkArea.height - windowBounds.height, false);
-    }
-  }
-}
-
 function checkForAvailableInstance() {
   const instances = config.get('allInstances');
+  if (!instances?.length > 1) return;
 
-  if (instances?.length > 1) {
-    bonjour.find({ type: 'home-assistant' }, (instance) => {
-      if (instance.txt.internal_url && instances.indexOf(instance.txt.internal_url) !== -1) {
-        return currentInstance(instance.txt.internal_url);
-      }
+  bonjour.find({ type: 'home-assistant' }, (instance) => {
+    if (instance.txt.internal_url && instances.indexOf(instance.txt.internal_url) !== -1) return currentInstance(instance.txt.internal_url);
+    if (instance.txt.external_url && instances.indexOf(instance.txt.external_url) !== -1) return currentInstance(instance.txt.external_url);
+  });
 
-      if (instance.txt.external_url && instances.indexOf(instance.txt.external_url) !== -1) {
-        return currentInstance(instance.txt.external_url);
-      }
-    });
+  for (let instance of instances.filter(e => e !== currentInstance())) {
+    const url = new URL(instance);
+    const request = net.request(`${url.origin}/auth/providers`);
     let found;
-    for (let instance of instances.filter((e) => e.url !== currentInstance())) {
-      const url = new URL(instance);
-      const request = net.request(`${url.origin}/auth/providers`);
-      request.on('response', (response) => {
-        if (response.statusCode === 200) {
-          found = instance;
-        }
-      });
-      request.on('error', (_) => {
-      });
-      request.end();
-
-      if (found) {
-        currentInstance(found);
-        break;
-      }
-    }
+    request.on('response', (response) => { if (response.statusCode === 200) found = instance; });
+    request.on('error', () => {});
+    request.end();
+    if (found) { currentInstance(found); break; }
   }
 }
 
-function getMenu() {
-  let instancesMenu = [
-    {
-      label: 'Open in Browser',
-      enabled: currentInstance(),
-      click: async () => {
-        await shell.openExternal(currentInstance());
-      },
-    },
-    {
-      type: 'separator',
-    },
-  ];
+// ── Wire modules together ────────────────────────────────────────────────────
 
-  const allInstances = config.get('allInstances');
+// Window module needs runtime callbacks to avoid circular dependency
+windowManager.init({
+  showWindow:      () => windowManager.showWindow(),
+  changePosition:  () => trayModule.changePosition(),
+  toggleFullScreen: (mode) => windowManager.toggleFullScreen(mode),
+  forceQuit:       () => forceQuit,
+});
 
-  if (allInstances) {
-    allInstances.forEach((e) => {
-      instancesMenu.push({
-        label: e,
-        type: 'checkbox',
-        checked: currentInstance() === e,
-        click: async () => {
-          currentInstance(e);
-          await mainWindow.loadURL(e);
-          mainWindow.show();
-        },
-      });
-    });
+// Lazy ref so trayModule is defined after createTray is called
+const trayModule = require('./src/tray');
 
-    instancesMenu.push(
-      {
-        type: 'separator',
-      },
-      {
-        label: 'Add another Instance...',
-        click: async () => {
-          config.delete('currentInstance');
-          await mainWindow.loadURL(indexFile);
-          mainWindow.show();
-        },
-      },
-      {
-        label: 'Automatic Switching',
-        type: 'checkbox',
-        enabled: config.has('allInstances') && config.get('allInstances').length > 1,
-        checked: config.get('automaticSwitching'),
-        click: () => {
-          config.set('automaticSwitching', !config.get('automaticSwitching'));
-        },
-      },
-    );
-  } else {
-    instancesMenu.push({ label: 'Not Connected...', enabled: false });
-  }
+// ── macOS dock ───────────────────────────────────────────────────────────────
+if (process.platform === 'darwin') app.dock.hide();
 
-  // ── Quick Actions ────────────────────────────────────────────────────────
-  const pinned = config.get('pinnedEntities') || [];
-  const quickActions = pinned.length > 0
-    ? pinned.map(entityId => {
-        const entity = cachedEntities.find(e => e.entity_id === entityId);
-        const name = entity?.name || entityId;
-        const isOn = entity?.state === 'on';
-        return {
-          label: `${isOn ? '●' : '○'} ${name}`,
-          click: async () => {
-            await haClient.toggle(entityId);
-            setTimeout(refreshEntityCache, 800); // refresh cache after toggle
-          },
-        };
-      })
-    : [{ label: 'No entities pinned — open Settings', enabled: false }];
-
-  const quickActionsMenu = [
-    { type: 'separator' },
-    {
-      label: '⚡ Quick Actions',
-      submenu: [
-        ...quickActions,
-        { type: 'separator' },
-        {
-          label: 'Manage Quick Actions...',
-          click: () => openSettingsWindow(),
-        },
-      ],
-    },
-  ];
-
-  return Menu.buildFromTemplate([
-    {
-      label: 'Show/Hide Window',
-      visible: process.platform === 'linux',
-      click: () => {
-        if (mainWindow.isVisible()) {
-          mainWindow.hide();
-        } else {
-          showWindow();
-        }
-      },
-    },
-    {
-      visible: process.platform === 'linux',
-      type: 'separator',
-    },
-    ...instancesMenu,
-    ...quickActionsMenu,
-    {
-      type: 'separator',
-    },
-    {
-      label: 'Hover to Show',
-      visible: process.platform !== 'linux' && !config.get('detachedMode'),
-      enabled: !config.get('detachedMode'),
-      type: 'checkbox',
-      checked: !config.get('disableHover'),
-      click: () => {
-        config.set('disableHover', !config.get('disableHover'));
-      },
-    },
-    {
-      label: 'Stay on Top',
-      type: 'checkbox',
-      checked: config.get('stayOnTop'),
-      click: () => {
-        config.set('stayOnTop', !config.get('stayOnTop'));
-        mainWindow.setAlwaysOnTop(config.get('stayOnTop'));
-
-        if (mainWindow.isAlwaysOnTop()) {
-          showWindow();
-        }
-      },
-    },
-    {
-      label: 'Start at Login',
-      type: 'checkbox',
-      checked: autostartEnabled,
-      click: () => {
-        app.setLoginItemSettings({ openAtLogin: !autostartEnabled });
-        checkAutoStart();
-      },
-    },
-    {
-      label: 'Enable Shortcut',
-      type: 'checkbox',
-      accelerator: 'CommandOrControl+Alt+X',
-      checked: config.get('shortcutEnabled'),
-      click: () => {
-        config.set('shortcutEnabled', !config.get('shortcutEnabled'));
-
-        if (config.get('shortcutEnabled')) {
-          registerKeyboardShortcut();
-        } else {
-          unregisterKeyboardShortcut();
-        }
-      },
-    },
-    {
-      type: 'separator',
-    },
-    {
-      label: 'Use detached Window',
-      type: 'checkbox',
-      checked: config.get('detachedMode'),
-      click: async () => {
-        config.set('detachedMode', !config.get('detachedMode'));
-        mainWindow.hide();
-        await createMainWindow(config.get('detachedMode'));
-      },
-    },
-    {
-      label: 'Use Fullscreen',
-      type: 'checkbox',
-      checked: config.get('fullScreen'),
-      accelerator: 'CommandOrControl+Alt+Return',
-      click: () => {
-        toggleFullScreen();
-      },
-    },
-    {
-      type: 'separator',
-    },
-    {
-      label: `v${app.getVersion()}`,
-      enabled: false,
-    },
-    {
-      label: 'Automatic Updates',
-      type: 'checkbox',
-      checked: config.get('autoUpdate'),
-      click: async () => {
-        const currentStatus = config.get('autoUpdate');
-        config.set('autoUpdate', !currentStatus);
-
-        if (currentStatus) {
-          clearInterval(updateCheckerInterval);
-          updateCheckerInterval = null;
-        } else {
-          await useAutoUpdater();
-        }
-      },
-    },
-    {
-      label: 'Open on github.com',
-      click: async () => {
-        await shell.openExternal('https://github.com/iprodanovbg/homeassistant-desktop');
-      },
-    },
-    {
-      type: 'separator',
-    },
-    {
-      label: '⚙ Settings',
-      click: () => openSettingsWindow(),
-    },
-    {
-      type: 'separator',
-    },
-    {
-      label: 'Restart Application',
-      click: () => {
-        app.relaunch();
-        app.exit();
-      },
-    },
-    {
-      label: '⚠️ Reset Application',
-      click: () => {
-        dialog
-          .showMessageBox({
-            message: 'Are you sure you want to reset Home Assistant Desktop?',
-            buttons: ['Reset Everything!', 'Reset Windows', 'Cancel'],
-          })
-          .then(async (res) => {
-            if (res.response !== 2) {
-              if (res.response === 0) {
-                config.clear();
-                await mainWindow.webContents.session.clearCache();
-                await mainWindow.webContents.session.clearStorageData();
-              } else {
-                config.delete('windowSizeDetached');
-                config.delete('windowSize');
-                config.delete('windowPosition');
-                config.delete('fullScreen');
-                config.delete('detachedMode');
-              }
-
-              app.relaunch();
-              app.exit();
-            }
-          });
-      },
-    },
-    {
-      type: 'separator',
-    },
-    {
-      label: 'Quit',
-      click: () => {
-        forceQuit = true;
-        app.quit();
-      },
-    },
-  ]);
-}
-
-async function createMainWindow(show = false) {
-  logger.info('Initialized main window');
-  mainWindow = new BrowserWindow({
-    width: 420,
-    height: 460,
-    minWidth: 420,
-    minHeight: 460,
-    show: false,
-    skipTaskbar: !show,
-    autoHideMenuBar: true,
-    frame: config.get('detachedMode') && process.platform !== 'darwin',
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: `${__dirname}/preload.js`,
-    },
-  });
-
-  // mainWindow.webContents.openDevTools();
-  await mainWindow.loadURL(indexFile);
-
-  createTray();
-
-  // open external links in default browser
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
-    return { action: 'deny' };
-  });
-
-    // hide scrollbar and inject HA notification bridge for HA pages
-  mainWindow.webContents.on('did-finish-load', async function () {
-    await mainWindow.webContents.insertCSS('::-webkit-scrollbar { display: none; } body { -webkit-user-select: none; }');
-
-    if (config.get('detachedMode') && process.platform === 'darwin') {
-      await mainWindow.webContents.insertCSS('body { -webkit-app-region: drag; }');
-    }
-
-    // Only inject the HA bridge into actual HA pages, not our local setup pages
-    const url = mainWindow.webContents.getURL();
-    if (!url.includes('web/index.html') && !url.includes('web/error.html') && url.startsWith('http')) {
-      try {
-        const bridgeScript = fs.readFileSync(`${__dirname}/src/haNotificationBridge.js`, 'utf8');
-        await mainWindow.webContents.executeJavaScript(bridgeScript);
-        logger.info('HA notification bridge injected.');
-      } catch (err) {
-        logger.error('Failed to inject HA notification bridge:', err);
-      }
-    }
-  });
-
-  if (config.get('detachedMode')) {
-    if (config.has('windowPosition')) {
-      mainWindow.setSize(...config.get('windowSizeDetached'));
-    } else {
-      config.set('windowPosition', mainWindow.getPosition());
-    }
-
-    if (config.has('windowSizeDetached')) {
-      mainWindow.setPosition(...config.get('windowPosition'));
-    } else {
-      config.set('windowSizeDetached', mainWindow.getSize());
-    }
-  } else if (config.has('windowSize')) {
-    mainWindow.setSize(...config.get('windowSize'));
-  } else {
-    config.set('windowSize', mainWindow.getSize());
-  }
-
-  mainWindow.on('resize', (e) => {
-    // ignore resize event when using fullscreen mode
-    if (mainWindow.isFullScreen()) {
-      return e;
-    }
-
-    if (!config.get('disableHover') || resizeEvent) {
-      config.set('disableHover', true);
-      resizeEvent = e;
-      setTimeout(() => {
-        if (resizeEvent === e) {
-          config.set('disableHover', false);
-          resizeEvent = false;
-        }
-      }, 600);
-    }
-
-    if (config.get('detachedMode')) {
-      config.set('windowSizeDetached', mainWindow.getSize());
-    } else {
-      if (process.platform !== 'linux') {
-        changePosition();
-      }
-
-      config.set('windowSize', mainWindow.getSize());
-    }
-  });
-
-  mainWindow.on('move', () => {
-    if (config.get('detachedMode')) {
-      config.set('windowPosition', mainWindow.getPosition());
-    }
-  });
-
-  mainWindow.on('close', (e) => {
-    if (!forceQuit) {
-      mainWindow.hide();
-      e.preventDefault();
-    }
-  });
-
-  mainWindow.on('blur', () => {
-    if (!config.get('detachedMode') && !mainWindow.isAlwaysOnTop()) {
-      mainWindow.hide();
-    }
-  });
-
-  mainWindow.setAlwaysOnTop(!!config.get('stayOnTop'));
-
-  if (initialized && (mainWindow.isAlwaysOnTop() || show)) {
-    showWindow();
-  }
-
-  toggleFullScreen(!!config.get('fullScreen'));
-
-  initialized = true;
-}
-
-async function reinitMainWindow() {
-  logger.info('Re-initialized main window');
-  mainWindow.destroy();
-  mainWindow = null;
-  await createMainWindow(!config.has('currentInstance'));
-
-  if (!availabilityCheckerInterval) {
-    logger.info('Re-initialized availability check');
-    availabilityCheckerInterval = setInterval(availabilityCheck, 3000);
-  }
-}
-
-function showWindow() {
-  if (!config.get('detachedMode')) {
-    changePosition();
-  }
-
-  if (!mainWindow.isVisible()) {
-    mainWindow.setVisibleOnAllWorkspaces(true); // put the window on all screens
-    mainWindow.show();
-    mainWindow.focus();
-    mainWindow.setVisibleOnAllWorkspaces(false); // disable all screen behavior
-    mainWindow.setSkipTaskbar(!config.get("detachedMode"));
-  }
-}
-
-function createTray() {
-  if (tray instanceof Tray) {
-    return;
-  }
-
-  logger.info('Initialized Tray menu');
-  tray = new Tray(
-    ['win32', 'linux'].includes(process.platform) ? `${__dirname}/assets/IconWin.png` : `${__dirname}/assets/IconTemplate.png`,
-  );
-
-  tray.on('click', () => {
-    if (mainWindow.isVisible()) {
-      mainWindow.hide();
-
-      if (process.platform === 'darwin') {
-        app.dock.hide();
-      }
-    } else {
-      showWindow();
-    }
-  });
-
-  tray.on('right-click', () => {
-    if (!config.get('detachedMode')) {
-      mainWindow.hide();
-    }
-
-    tray.popUpContextMenu(getMenu());
-  });
-
-  let timer = undefined;
-
-  tray.on('mouse-move', () => {
-    if (config.get('detachedMode') || mainWindow.isAlwaysOnTop() || config.get('disableHover')) {
-      return;
-    }
-
-    if (!mainWindow.isVisible()) {
-      showWindow();
-    }
-
-    if (timer) {
-      clearTimeout(timer);
-    }
-
-    timer = setTimeout(() => {
-      let mousePos = screen.getCursorScreenPoint();
-      let trayBounds = tray.getBounds();
-
-      if (
-        !(mousePos.x >= trayBounds.x && mousePos.x <= trayBounds.x + trayBounds.width) ||
-        !(mousePos.y >= trayBounds.y && mousePos.y <= trayBounds.y + trayBounds.height)
-      ) {
-        setWindowFocusTimer();
-      }
-    }, 100);
-  });
-}
-
-function setWindowFocusTimer() {
-  setTimeout(() => {
-    let mousePos = screen.getCursorScreenPoint();
-    let windowPosition = mainWindow.getPosition();
-    let windowSize = mainWindow.getSize();
-
-    if (
-      !resizeEvent &&
-      (
-        !(mousePos.x >= windowPosition[ 0 ] && mousePos.x <= windowPosition[ 0 ] + windowSize[ 0 ]) ||
-        !(mousePos.y >= windowPosition[ 1 ] && mousePos.y <= windowPosition[ 1 ] + windowSize[ 1 ])
-      )
-    ) {
-      mainWindow.hide();
-    } else {
-      setWindowFocusTimer();
-    }
-  }, 110);
-}
-
-function toggleFullScreen(mode = !mainWindow.isFullScreen()) {
-  config.set('fullScreen', mode);
-  mainWindow.setFullScreen(mode);
-
-  if (mode) {
-    mainWindow.setAlwaysOnTop(true);
-  } else {
-    mainWindow.setAlwaysOnTop(config.get('stayOnTop'));
-  }
-}
-
-function currentInstance(url = null) {
-  if (url) {
-    config.set('currentInstance', config.get('allInstances').indexOf(url));
-  }
-
-  if (config.has('currentInstance')) {
-    return config.get('allInstances')[ config.get('currentInstance') ];
-  }
-
-  return false;
-}
-
-function addInstance(url) {
-  if (!config.has('allInstances')) {
-    config.set('allInstances', []);
-  }
-
-  let instances = config.get('allInstances');
-
-  if (instances.find((e) => e === url)) {
-    currentInstance(url);
-
-    return;
-  }
-
-  // active hover by default after adding first instance
-  if (!instances.length) {
-    config.set('disableHover', false);
-  }
-
-  instances.push(url);
-  config.set('allInstances', instances);
-  currentInstance(url);
-}
-
-async function showError(isError) {
-  if (!isError && mainWindow.webContents.getURL().includes('error.html')) {
-    await mainWindow.loadURL(indexFile);
-  }
-
-  if (isError && currentInstance() && !mainWindow.webContents.getURL().includes('error.html')) {
-    await mainWindow.loadURL(errorFile);
-  }
-}
-
+// ── App lifecycle ────────────────────────────────────────────────────────────
 app.whenReady().then(async () => {
-  await useAutoUpdater();
+  await useAutoUpdater(() => { forceQuit = true; });
   checkAutoStart();
 
-  await createMainWindow(!config.has('currentInstance'));
+  await windowManager.createMainWindow(!config.has('currentInstance'));
+
+  // Hand dependencies to tray module
+  createTray({
+    getMainWindow:        () => windowManager.getMainWindow(),
+    showWindow:           () => windowManager.showWindow(),
+    toggleFullScreen:     () => windowManager.toggleFullScreen(),
+    openSettingsWindow,
+    getCachedEntities:    () => cachedEntities,
+    refreshEntityCache,
+    getAutostartEnabled:  () => autostartEnabled,
+    getUpdateCheckerInterval,
+    clearUpdateInterval,
+    useAutoUpdater:       () => useAutoUpdater(() => { forceQuit = true; }),
+    forceQuit:            () => { forceQuit = true; },
+  });
 
   if (process.platform === 'linux') {
-    tray.setContextMenu(getMenu());
+    getTray().setContextMenu(getMenu());
   }
+
+  // Register all IPC handlers
+  registerAll({
+    getMainWindow:    () => windowManager.getMainWindow(),
+    showWindow:       () => windowManager.showWindow(),
+    openSettingsWindow,
+    getCachedEntities: () => cachedEntities,
+    setCachedEntities: (entities) => { cachedEntities = entities; },
+    reinitMainWindow: async () => {
+      await windowManager.reinitMainWindow();
+      if (!availabilityCheckerInterval) {
+        availabilityCheckerInterval = setInterval(availabilityCheck, 3000);
+      }
+    },
+    addInstance,
+    currentInstance,
+    bonjour,
+    forceQuit: () => { forceQuit = true; },
+  });
 
   if (!availabilityCheckerInterval) {
     logger.info('Initialized availability check');
     availabilityCheckerInterval = setInterval(availabilityCheck, 3000);
   }
 
-  // register shortcut
-  if (config.get('shortcutEnabled')) {
-    registerKeyboardShortcut();
-  }
+  // Keyboard shortcuts
+  if (config.get('shortcutEnabled')) windowManager.registerKeyboardShortcut();
+  globalShortcut.register('CommandOrControl+Alt+Return', () => windowManager.toggleFullScreen());
+  shortcutManager.registerAll();
 
-  globalShortcut.register('CommandOrControl+Alt+Return', () => {
-    toggleFullScreen();
-  });
+  if (!config.has('currentInstance')) config.set('disableHover', true);
+  if (!config.has('autoUpdate')) config.set('autoUpdate', true);
 
-  // disable hover for first start
-  if (!config.has('currentInstance')) {
-    config.set('disableHover', true);
-  }
+  // Active window tracker + full sensor push platform
+  sensorPusher.init(30_000);
 
-  // enable auto update by default
-  if (!config.has('autoUpdate')) {
-    config.set('autoUpdate', true);
-  }
-
-  // start active window tracker (Windows only)
-  if (process.platform === 'win32') {
-    startTracking((windowInfo) => {
-      logger.info(`Active window: [${windowInfo.process_name}] ${windowInfo.window_title}`);
-    }, 3000);
-  }
-
-  // seed HA token on first run (remove this block after initial setup)
-  if (!config.get('haToken')) {
-    config.set('haBaseUrl', 'http://homeassistant.local:8123');
-    config.set('haToken', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhYWM4NjIyMDUzZWM0ZGRjODE1YzJjNmM2YjZhMTE2NCIsImlhdCI6MTc3NDEwNjE4MSwiZXhwIjoyMDg5NDY2MTgxfQ.hSzTKsGSYbRq10jycYVTJ4lCdTx-9BTQiWNIjR46j1U');
-    logger.info('Seeded HA connection config from first-run defaults.');
-  }
-
-  // initial entity cache load + refresh every 60 seconds
+  // Initial entity cache + 60s refresh
   await refreshEntityCache();
   setInterval(refreshEntityCache, 60 * 1000);
 });
 
 app.on('will-quit', () => {
-  unregisterKeyboardShortcut();
+  windowManager.unregisterKeyboardShortcut();
+  shortcutManager.unregisterAll();
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-ipcMain.on('get-instances', (event) => {
-  event.reply('get-instances', config.get('allInstances') || []);
-});
-
-ipcMain.on('ha-instance', (event, url) => {
-  if (url) {
-    addInstance(url);
-  }
-
-  if (currentInstance()) {
-    event.reply('ha-instance', currentInstance());
-  }
-});
-
-ipcMain.on('reconnect', async () => {
-  await reinitMainWindow();
-});
-
-ipcMain.on('restart', () => {
-  app.relaunch();
-  app.exit();
-});
-
-ipcMain.on('start-bonjour', (event) => {
-  bonjour.find({ type: 'home-assistant' }, (instance) => {
-    event.reply('bonjour-instance', {
-      internal_url: instance.txt.internal_url,
-      external_url: instance.txt.external_url
-    });
-  });
-});
-
-ipcMain.handle('get-system-stats', async () => {
-  return SystemMonitor.getStats();
-});
-
-ipcMain.on('ha-notification', (_event, { title, message }) => {
-  showNotification(title, message, () => {
-    // bring the app to focus when the user clicks the notification
-    showWindow();
-  });
-});
-
-ipcMain.handle('get-active-window', async () => {
-  return getActiveWindow();
-});
-
-ipcMain.handle('get-media-status', async () => {
-  const stats = await SystemMonitor.getStats();
-  return {
-    webcam_active: stats.webcam_active,
-    microphone_active: stats.microphone_active,
-  };
-});
-
-// ── Settings window IPC ────────────────────────────────────────────────────
-ipcMain.on('settings-open', (event) => {
-  event.reply('settings-loaded', {
-    haBaseUrl: config.get('haBaseUrl'),
-    haToken:   config.get('haToken'),
-    pinnedEntities: config.get('pinnedEntities') || [],
-  });
-  // also push current entity list if we have one
-  if (cachedEntities.length) {
-    event.reply('entities-loaded', cachedEntities);
-  }
-});
-
-ipcMain.handle('save-settings', async (_event, { haBaseUrl, haToken }) => {
-  try {
-    config.set('haBaseUrl', haBaseUrl.trim());
-    config.set('haToken', haToken.trim());
-    const entities = await haClient.getToggleableEntities();
-    cachedEntities = entities;
-    return { ok: true, entities };
-  } catch (err) {
-    return { ok: false, error: err.message };
-  }
-});
-
-ipcMain.handle('test-connection', async (_event, { haBaseUrl, haToken }) => {
-  // temporarily override for the test without saving
-  const orig = { url: config.get('haBaseUrl'), token: config.get('haToken') };
-  config.set('haBaseUrl', haBaseUrl);
-  config.set('haToken', haToken);
-  try {
-    const states = await haClient.getStates();
-    config.set('haBaseUrl', orig.url);
-    config.set('haToken', orig.token);
-    return { ok: !!states, count: states?.length };
-  } catch (err) {
-    config.set('haBaseUrl', orig.url);
-    config.set('haToken', orig.token);
-    return { ok: false, error: err.message };
-  }
-});
-
-ipcMain.handle('save-pinned', async (_event, pinnedEntities) => {
-  config.set('pinnedEntities', pinnedEntities);
-  return { ok: true };
+  if (process.platform !== 'darwin') app.quit();
 });

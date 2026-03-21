@@ -138,6 +138,7 @@
       cursor: pointer;
       transition: background 0.12s;
       border-bottom: 1px solid var(--border);
+      -webkit-user-select: none;
       user-select: none;
     }
     .entity-item:last-child { border-bottom: none; }
@@ -256,22 +257,47 @@
       <div class="loading">Connect to Home Assistant first to see entities.</div>
     </div>
   </div>
+
+  <!-- Shortcuts -->
+  <div style="margin-top: 10px; margin-bottom: 20px;">
+    <div class="section-title">Global Shortcuts</div>
+    <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px;padding:0;">
+      Bind global keyboard combos to any toggleable entity.
+    </p>
+    <div id="shortcutsList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+    
+    <div class="row" style="align-items:flex-end;">
+      <div class="field" style="flex:1;">
+        <label>Keys (e.g. CommandOrControl+Shift+1)</label>
+        <input type="text" id="shortcutKeys" placeholder="CommandOrControl+Shift+L"/>
+      </div>
+      <div class="field" style="flex:1;">
+        <label>Entity ID</label>
+        <input type="text" id="shortcutEntity" placeholder="light.living_room" list="entityDatalist"/>
+        <datalist id="entityDatalist"></datalist>
+      </div>
+      <button class="btn btn-primary" onclick="addShortcut()" style="margin-bottom:1px;">Add</button>
+    </div>
+  </div>
 </div>
 
 <script>
   let allEntities = [];
   let pinnedIds = [];
+  let allShortcuts = [];
 
   window.api.on('settings-loaded', (settings) => {
     document.getElementById('haUrl').value = settings.haBaseUrl || '';
     document.getElementById('haToken').value = settings.haToken || '';
     pinnedIds = settings.pinnedEntities || [];
     renderPins();
+    loadShortcuts();
   });
 
   window.api.on('entities-loaded', (entities) => {
     allEntities = entities;
     renderEntityList(entities);
+    updateDatalist(entities);
   });
 
   window.api.send('settings-open');
@@ -360,6 +386,48 @@
     await window.api.invoke('save-pinned', pinnedIds);
     renderPins();
     renderEntityList(allEntities);
+  }
+
+  function updateDatalist(entities) {
+    document.getElementById('entityDatalist').innerHTML = entities.map(e => `<option value="${e.entity_id}">${e.name}</option>`).join('');
+  }
+
+  async function loadShortcuts() {
+    allShortcuts = await window.api.invoke('get-shortcuts');
+    renderShortcuts();
+  }
+
+  function renderShortcuts() {
+    const el = document.getElementById('shortcutsList');
+    if (!allShortcuts.length) {
+      el.innerHTML = '<span class="empty-state">No shortcuts defined.</span>';
+      return;
+    }
+    el.innerHTML = allShortcuts.map(s => `
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border);">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--ha-blue);">${s.accelerator}</div>
+          <div style="font-size:11px;color:var(--text-muted);">${s.entityId} (toggle)</div>
+        </div>
+        <button class="btn btn-danger" onclick="removeShortcut('${s.accelerator}')">Remove</button>
+      </div>
+    `).join('');
+  }
+
+  async function addShortcut() {
+    const keys = document.getElementById('shortcutKeys').value.trim();
+    const entity = document.getElementById('shortcutEntity').value.trim();
+    if (!keys || !entity) return;
+    
+    await window.api.invoke('save-shortcut', { accelerator: keys, entityId: entity, service: 'toggle' });
+    document.getElementById('shortcutKeys').value = '';
+    document.getElementById('shortcutEntity').value = '';
+    loadShortcuts();
+  }
+
+  async function removeShortcut(keys) {
+    await window.api.invoke('remove-shortcut', keys);
+    loadShortcuts();
   }
 </script>
 </body>

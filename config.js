@@ -13,5 +13,6 @@ module.exports = new Store({
     haBaseUrl: '',
     haToken: '',
     pinnedEntities: [],
+    shortcuts: [],
   }
 });

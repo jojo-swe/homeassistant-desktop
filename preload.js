@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   send: (channel, data) => {
-    const validChannels = ['get-instances', 'ha-instance', 'reconnect', 'restart', 'start-bonjour', 'ha-notification', 'settings-open'];
+    const validChannels = ['get-instances', 'ha-instance', 'reconnect', 'restart', 'start-bonjour', 'ha-notification', 'settings-open', 'desktop-command'];
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data);
     }
@@ -14,7 +14,7 @@ contextBridge.exposeInMainWorld('api', {
     }
   },
   invoke: (channel, data) => {
-    const validChannels = ['get-system-stats', 'get-active-window', 'get-media-status', 'save-settings', 'test-connection', 'save-pinned'];
+    const validChannels = ['get-system-stats', 'get-active-window', 'get-media-status', 'save-settings', 'test-connection', 'save-pinned', 'get-shortcuts', 'save-shortcut', 'remove-shortcut'];
     if (validChannels.includes(channel)) {
       return ipcRenderer.invoke(channel, data);
     }
