@@ -48,6 +48,19 @@
       "extendInfo": {
         "LSUIElement": true
       }
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ]
     }
   }
 }

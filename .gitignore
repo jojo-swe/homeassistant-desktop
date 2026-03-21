@@ -6,3 +6,5 @@ dev-app-update.yml
 build/
 coverage/
 *.log
+run_log.txt
+run_error.txt
