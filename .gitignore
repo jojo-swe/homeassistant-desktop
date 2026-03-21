@@ -8,3 +8,4 @@ coverage/
 *.log
 run_log.txt
 run_error.txt
+job_log.txt
