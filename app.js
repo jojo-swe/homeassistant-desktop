@@ -16,13 +16,11 @@ const Bonjour = require('bonjour-service');
 const bonjour = new Bonjour.Bonjour();
 const logger = require('electron-log');
 const config = require('./config');
-const updateUrl = `https://update.iprodanov.com/files`;
-
+const SystemMonitor = require('./src/systemMonitor');
+const { showNotification } = require('./src/notifications');
+const { startTracking, getActiveWindow } = require('./src/activeWindow');
+const fs = require('fs');
 autoUpdater.logger = logger;
-autoUpdater.setFeedURL({
-  provider: 'generic',
-  url: updateUrl,
-});
 logger.catchErrors();
 logger.info(`${app.name} started`);
 logger.info(`Platform: ${process.platform} ${process.arch}`);
@@ -451,7 +449,7 @@ async function createMainWindow(show = false) {
     return { action: 'deny' };
   });
 
-  // hide scrollbar
+    // hide scrollbar and inject HA notification bridge for HA pages
   mainWindow.webContents.on('did-finish-load', async function () {
     await mainWindow.webContents.insertCSS('::-webkit-scrollbar { display: none; } body { -webkit-user-select: none; }');
 
@@ -459,8 +457,17 @@ async function createMainWindow(show = false) {
       await mainWindow.webContents.insertCSS('body { -webkit-app-region: drag; }');
     }
 
-    // let code = `document.addEventListener('mousemove', () => { ipcRenderer.send('mousemove'); });`;
-    // mainWindow.webContents.executeJavaScript(code);
+    // Only inject the HA bridge into actual HA pages, not our local setup pages
+    const url = mainWindow.webContents.getURL();
+    if (!url.includes('web/index.html') && !url.includes('web/error.html') && url.startsWith('http')) {
+      try {
+        const bridgeScript = fs.readFileSync(`${__dirname}/src/haNotificationBridge.js`, 'utf8');
+        await mainWindow.webContents.executeJavaScript(bridgeScript);
+        logger.info('HA notification bridge injected.');
+      } catch (err) {
+        logger.error('Failed to inject HA notification bridge:', err);
+      }
+    }
   });
 
   if (config.get('detachedMode')) {
@@ -733,6 +740,13 @@ app.whenReady().then(async () => {
   if (!config.has('autoUpdate')) {
     config.set('autoUpdate', true);
   }
+
+  // start active window tracker (Windows only)
+  if (process.platform === 'win32') {
+    startTracking((windowInfo) => {
+      logger.info(`Active window: [${windowInfo.process_name}] ${windowInfo.window_title}`);
+    }, 3000);
+  }
 });
 
 app.on('will-quit', () => {
@@ -775,4 +789,27 @@ ipcMain.on('start-bonjour', (event) => {
       external_url: instance.txt.external_url
     });
   });
+});
+
+ipcMain.handle('get-system-stats', async () => {
+  return SystemMonitor.getStats();
+});
+
+ipcMain.on('ha-notification', (_event, { title, message }) => {
+  showNotification(title, message, () => {
+    // bring the app to focus when the user clicks the notification
+    showWindow();
+  });
+});
+
+ipcMain.handle('get-active-window', async () => {
+  return getActiveWindow();
+});
+
+ipcMain.handle('get-media-status', async () => {
+  const stats = await SystemMonitor.getStats();
+  return {
+    webcam_active: stats.webcam_active,
+    microphone_active: stats.microphone_active,
+  };
 });

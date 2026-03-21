@@ -2,13 +2,13 @@
 
 Desktop App (Windows / macOS / Linux) for [Home Assistant](https://www.home-assistant.io/) built with [Electron](https://www.electronjs.org)
 
-![Home Assistant - Desktop](https://raw.githubusercontent.com/iprodanovbg/homeassistant-desktop/master/media/screenshot.png)
+![Home Assistant - Desktop](https://raw.githubusercontent.com/jojo-swe/homeassistant-desktop/master/media/screenshot.png)
 
-This project is fork from [mrvnklm/homeassistant-desktop](https://github.com/mrvnklm/)
+This project is a fork from [iprodanovbg/homeassistant-desktop](https://github.com/iprodanovbg/homeassistant-desktop) (originally by [mrvnklm/homeassistant-desktop](https://github.com/mrvnklm/homeassistant-desktop)).
 
 ## Installation
 
-Just download the latest version for your platform from the [release section](https://github.com/iprodanovbg/homeassistant-desktop/releases/latest) to install Home Assistant
+Just download the latest version for your platform from the [release section](https://github.com/jojo-swe/homeassistant-desktop/releases/latest) to install Home Assistant
 
 ## Usage / Features
 
