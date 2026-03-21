@@ -1,46 +1,57 @@
-# Home Assistant - Desktop
+# Home Assistant Desktop
 
-Desktop App (Windows / macOS / Linux) for [Home Assistant](https://www.home-assistant.io/) built with [Electron](https://www.electronjs.org)
+A modernized Desktop App (Windows / macOS / Linux) for [Home Assistant](https://www.home-assistant.io/), built with [Electron](https://www.electronjs.org/).
+
+**This repository is an actively maintained fork** that modernizes the framework (Node.js 20+ & Electron 32+), radically improves application security via context isolation, and adds rich, two-way native OS integrations that go far beyond a simple webview.
+
+## 🚀 New Features in this Fork
+
+- **Native OS Notifications Bridge**: Intercepts Home Assistant `persistent_notification` events via WebSocket and pushes them natively to the OS (Windows Action Center, macOS Notification Center). Clicking the notification brings the app window to focus.
+- **Quick-Action System Tray Menu**: Pin any Home Assistant entity (lights, switches, scripts) directly to your system tray context menu, allowing instant toggling without opening the full interface.
+- **Rich Desktop System Sensors**: Your PC now acts as a rich sensor node for Home Assistant Automations:
+  - **Active Window Tracker:** Exposes the process name and window title of the program currently in focus.
+  - **Webcam & Microphone Tracker:** Exposes a boolean when a camera or microphone session is actively being used.
+  - **Detailed Telemetry:** CPU load, RAM usage, System Idle time, and Battery state.
+- **Dedicated Settings Panel**: An interactive UI for safely storing your Long-Lived Access Token to utilize the REST features and selecting pinned entities.
+- **Hardened Security Architecture**: Removed arbitrary Node.js code execution risks from remote Chromium contexts (`nodeIntegration: false`, strict `preload.js` bridge isolation).
 
 ![Home Assistant - Desktop](https://raw.githubusercontent.com/jojo-swe/homeassistant-desktop/master/media/screenshot.png)
 
-This project is a fork from [iprodanovbg/homeassistant-desktop](https://github.com/iprodanovbg/homeassistant-desktop) (originally by [mrvnklm/homeassistant-desktop](https://github.com/mrvnklm/homeassistant-desktop)).
+## 📥 Installation
 
-## Installation
+Download the latest version for your platform from the [Releases section](https://github.com/jojo-swe/homeassistant-desktop/releases/latest). 
 
-Just download the latest version for your platform from the [release section](https://github.com/jojo-swe/homeassistant-desktop/releases/latest) to install Home Assistant
+Automatic updates are bundled and will seamlessly pull newer binaries from GitHub Releases automatically.
 
-## Usage / Features
+## ⚙️ Standard Features
 
-- hover / click the tray icon to open the app
-- supports multiple instances of Home Assistant (including automatic switching)
-- automatic instance discovery using bonjour
-- right-click context menu for settings / reset / quit the app
-- global keyboard shortcut (Cmd/Ctrl + Alt + X) can be enabled to show / hide Home Assistant
-- fullscreen mode (Cmd/Ctrl + Alt + Return)
-- automatic updates (if not disabled in context menu)
+- Hover / click the tray icon to open the app (can be fully detached)
+- Supports multiple instances of Home Assistant (including automatic switching)
+- Automatic instance discovery using Bonjour
+- Right-click context menu for Quick Actions, settings, reset, or quit
+- Global OS keyboard shortcut (`Cmd/Ctrl + Alt + X`) can be enabled to show/hide the app instantly from anywhere
+- Fullscreen mode (`Cmd/Ctrl + Alt + Return`)
 
-## Notes
+## 📋 Telemetry & Home Assistant Integration
 
-- if using "detached window" on Windows, instead of dragging, you have to resize it to move it
+You can fetch the desktop sensors (CPU, Active Window, Webcam) from the Home Assistant dashboard using Webhooks or directly evaluating them using local commandline REST sensors pointing to the app's internal IP endpoints, depending on your network topology. See the accompanying `walkthrough.md` or Wiki for configuration recipes.
 
-## Contributing
+## 🤝 Contributing
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+Pull requests are always welcome. For major changes involving the Electron main-process or external native dependencies, please open an issue first to discuss the architecture.
 
-## License and Author
+For a full list of changes in the latest releases, see the [CHANGELOG.md](./CHANGELOG.md).
 
-Copyright 2022, [Ivan Prodanov](https://github.com/iprodanovbg)\
-Copyright 2020-2021, [Marvin Kelm](https://github.com/mrvnklm)
+---
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+## 📜 Credits & License
 
-    https://www.apache.org/licenses/LICENSE-2.0
+This project is a fork built to keep the Desktop companion alive.
+Huge credit to the original authors who laid the groundwork:
+- [iprodanovbg/homeassistant-desktop](https://github.com/iprodanovbg/homeassistant-desktop)
+- [mrvnklm/homeassistant-desktop](https://github.com/mrvnklm/homeassistant-desktop) (Original prototype)
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2022, [Ivan Prodanov](https://github.com/iprodanovbg)  
+Copyright 2020-2021, [Marvin Kelm](https://github.com/mrvnklm)  
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0).
