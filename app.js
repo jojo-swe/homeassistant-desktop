@@ -9,9 +9,8 @@ const {
   Menu,
   Tray,
   BrowserWindow,
-} = require('electron');
+  } = require('electron');
 const { autoUpdater } = require('electron-updater');
-const AutoLaunch = require('auto-launch');
 const Positioner = require('electron-traywindow-positioner');
 const Bonjour = require('bonjour-service');
 const bonjour = new Bonjour.Bonjour();
@@ -32,8 +31,6 @@ logger.info(`Platform: ${process.platform} ${process.arch}`);
 if (process.platform === 'darwin') {
   app.dock.hide();
 }
-
-const autoLauncher = new AutoLaunch({ name: 'Home Assistant Desktop' });
 
 const indexFile = `file://${__dirname}/web/index.html`;
 const errorFile = `file://${__dirname}/web/error.html`;
@@ -90,15 +87,7 @@ async function checkForUpdates() {
 }
 
 function checkAutoStart() {
-  autoLauncher
-    .isEnabled()
-    .then((isEnabled) => {
-      autostartEnabled = isEnabled;
-    })
-    .catch((err) => {
-      logger.error('There was a problem with application auto start');
-      logger.error(err);
-    });
+  autostartEnabled = app.getLoginItemSettings().openAtLogin;
 }
 
 function availabilityCheck() {
@@ -312,12 +301,7 @@ function getMenu() {
       type: 'checkbox',
       checked: autostartEnabled,
       click: () => {
-        if (autostartEnabled) {
-          autoLauncher.disable();
-        } else {
-          autoLauncher.enable();
-        }
-
+        app.setLoginItemSettings({ openAtLogin: !autostartEnabled });
         checkAutoStart();
       },
     },
@@ -450,8 +434,9 @@ async function createMainWindow(show = false) {
     autoHideMenuBar: true,
     frame: config.get('detachedMode') && process.platform !== 'darwin',
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: `${__dirname}/preload.js`,
     },
   });
 
@@ -781,4 +766,13 @@ ipcMain.on('reconnect', async () => {
 ipcMain.on('restart', () => {
   app.relaunch();
   app.exit();
+});
+
+ipcMain.on('start-bonjour', (event) => {
+  bonjour.find({ type: 'home-assistant' }, (instance) => {
+    event.reply('bonjour-instance', {
+      internal_url: instance.txt.internal_url,
+      external_url: instance.txt.external_url
+    });
+  });
 });

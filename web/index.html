@@ -4,13 +4,10 @@
 <head>
   <title>Home Assistant</title>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="assets/style.css" rel="stylesheet" />
   <link href="assets/checkmark.css" rel="stylesheet" />
   <script>
-    const { ipcRenderer } = require('electron');
-    const Bonjour = require('bonjour-service');
-    const bonjour = new Bonjour.Bonjour();
 
     function showInstance(url) {
       if (url === '') {
@@ -29,20 +26,21 @@
       setTimeout(() => document.getElementById('url').focus(), 300);
     });
 
-    ipcRenderer.send('get-instances');
-    ipcRenderer.on('get-instances', (event, result) => {
+    window.api.send('get-instances');
+    window.api.on('get-instances', (result) => {
       let instances = result;
 
-      bonjour.find({type: 'home-assistant'}, instance => {
-        if (instance.txt.internal_url && instances.indexOf(instance.txt.internal_url) === -1) {
-          showInstance(instance.txt.internal_url);
+      window.api.on('bonjour-instance', (instance) => {
+        if (instance.internal_url && instances.indexOf(instance.internal_url) === -1) {
+          showInstance(instance.internal_url);
         }
 
-        if (instance.txt.external_url && instances.indexOf(instance.txt.external_url) === -1) {
-          showInstance(instance.txt.external_url);
+        if (instance.external_url && instances.indexOf(instance.external_url) === -1) {
+          showInstance(instance.external_url);
         }
-      })
-    })
+      });
+      window.api.send('start-bonjour');
+    });
 
     function addInstance(url) {
       const urlField = document.getElementById('url');
@@ -55,14 +53,14 @@
       document.getElementById('check-wrapper').style.display = 'block';
       document.getElementById('url-wrapper').style.display = 'none';
       showCheckmark = true;
-      ipcRenderer.send('ha-instance', urlField.value);
+      window.api.send('ha-instance', urlField.value);
     }
 
-    ipcRenderer.send('ha-instance');
+    window.api.send('ha-instance');
 
     let showCheckmark = false;
 
-    ipcRenderer.on('ha-instance', function (event, url) {
+    window.api.on('ha-instance', function (url) {
       if (showCheckmark) {
         document
           .getElementById('check-wrapper')
@@ -124,10 +122,15 @@
 <body>
 <div class="container">
   <div class="content">
+    <style>
+      .logo-img { height: 52px; vertical-align: middle; margin-right: 10px; }
+      .margin-top-30 { margin-top: 30px; }
+      .d-none { display: none; }
+    </style>
     <div class="center header">
-      <img src="assets/favicon.png" height="52"/> Home Assistant
+      <img src="assets/favicon.png" class="logo-img" alt="Home Assistant Logo"/> Home Assistant
     </div>
-    <div id="availableInstancesContainer" style="display:none;">
+    <div id="availableInstancesContainer" class="d-none">
       <div class="center">
         <p>Available Instances: </p>
       </div>
@@ -136,7 +139,7 @@
         </div>
       </div>
     </div>
-    <div class="center" style="margin-top: 30px;">
+    <div class="center margin-top-30">
 
     </div>
     <div class="center">

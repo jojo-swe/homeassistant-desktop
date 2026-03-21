@@ -20,7 +20,6 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "auto-launch": "^5.0.5",
     "bonjour-service": "^1.0.14",
     "electron-log": "^4.4.8",
     "electron-store": "^8.1.0",
@@ -28,11 +27,11 @@
     "electron-updater": "^4.6.5"
   },
   "devDependencies": {
-    "electron": "21.2.0",
-    "electron-builder": "^23.0.0"
+    "electron": "^32.0.0",
+    "electron-builder": "^24.13.3"
   },
   "engines": {
-    "node": ">= 16"
+    "node": ">= 20"
   },
   "build": {
     "appId": "com.electron.homeassistant-desktop",

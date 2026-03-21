@@ -3,22 +3,23 @@
 <head>
   <title>Home Assistant</title>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <link href="assets/style.css" rel="stylesheet"/>
   <link href="assets/error.css" rel="stylesheet"/>
   <script>
-    const { ipcRenderer } = require('electron');
-
     function reconnect() {
-      ipcRenderer.send('reconnect');
+      window.api.send('reconnect');
     }
 
     function restart() {
-      ipcRenderer.send('restart');
+      window.api.send('restart');
     }
   </script>
 </head>
 
+<style>
+  .ml-10 { margin-left: 10px; }
+</style>
 <body>
 <div class="vertical-center">
   <div class="content">
@@ -38,7 +39,7 @@
     </div>
     <div class="center">
       <button class="pure-material-button-contained" onclick="reconnect()">Reconnect</button>
-      <button class="pure-material-button-contained" onclick="restart()" style="margin-left: 10px">Restart</button>
+      <button class="pure-material-button-contained" onclick="restart()" class="ml-10">Restart</button>
     </div>
   </div>
 </div>
