@@ -29,7 +29,7 @@
     "systeminformation": "^5.31.5"
   },
   "devDependencies": {
-    "electron": "^32.0.0",
+    "electron": "^35.7.5",
     "electron-builder": "^24.13.3"
   },
   "engines": {
