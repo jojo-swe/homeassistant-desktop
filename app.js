@@ -19,6 +19,7 @@ const config = require('./config');
 const SystemMonitor = require('./src/systemMonitor');
 const { showNotification } = require('./src/notifications');
 const { startTracking, getActiveWindow } = require('./src/activeWindow');
+const haClient = require('./src/haClient');
 const fs = require('fs');
 autoUpdater.logger = logger;
 logger.catchErrors();
@@ -38,9 +39,50 @@ let autostartEnabled = false;
 let forceQuit = false;
 let resizeEvent = false;
 let mainWindow;
+let settingsWindow = null;
 let tray;
 let updateCheckerInterval;
 let availabilityCheckerInterval;
+let cachedEntities = [];
+
+const settingsFile = `file://${__dirname}/web/settings.html`;
+
+async function refreshEntityCache() {
+  if (!haClient.isConfigured()) return;
+  try {
+    const entities = await haClient.getToggleableEntities();
+    cachedEntities = entities;
+    logger.info(`Entity cache refreshed: ${entities.length} entities.`);
+  } catch (err) {
+    logger.error('Failed to refresh entity cache:', err);
+  }
+}
+
+function openSettingsWindow() {
+  if (settingsWindow) {
+    settingsWindow.focus();
+    return;
+  }
+
+  settingsWindow = new BrowserWindow({
+    width: 420,
+    height: 600,
+    minWidth: 420,
+    minHeight: 500,
+    title: 'Home Assistant Desktop — Settings',
+    autoHideMenuBar: true,
+    resizable: false,
+    skipTaskbar: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: `${__dirname}/preload.js`,
+    },
+  });
+
+  settingsWindow.loadURL(settingsFile);
+  settingsWindow.on('closed', () => { settingsWindow = null; });
+}
 
 function registerKeyboardShortcut() {
   globalShortcut.register('CommandOrControl+Alt+X', () => {
@@ -251,6 +293,38 @@ function getMenu() {
     instancesMenu.push({ label: 'Not Connected...', enabled: false });
   }
 
+  // ── Quick Actions ────────────────────────────────────────────────────────
+  const pinned = config.get('pinnedEntities') || [];
+  const quickActions = pinned.length > 0
+    ? pinned.map(entityId => {
+        const entity = cachedEntities.find(e => e.entity_id === entityId);
+        const name = entity?.name || entityId;
+        const isOn = entity?.state === 'on';
+        return {
+          label: `${isOn ? '●' : '○'} ${name}`,
+          click: async () => {
+            await haClient.toggle(entityId);
+            setTimeout(refreshEntityCache, 800); // refresh cache after toggle
+          },
+        };
+      })
+    : [{ label: 'No entities pinned — open Settings', enabled: false }];
+
+  const quickActionsMenu = [
+    { type: 'separator' },
+    {
+      label: '⚡ Quick Actions',
+      submenu: [
+        ...quickActions,
+        { type: 'separator' },
+        {
+          label: 'Manage Quick Actions...',
+          click: () => openSettingsWindow(),
+        },
+      ],
+    },
+  ];
+
   return Menu.buildFromTemplate([
     {
       label: 'Show/Hide Window',
@@ -268,6 +342,7 @@ function getMenu() {
       type: 'separator',
     },
     ...instancesMenu,
+    ...quickActionsMenu,
     {
       type: 'separator',
     },
@@ -368,6 +443,13 @@ function getMenu() {
       click: async () => {
         await shell.openExternal('https://github.com/iprodanovbg/homeassistant-desktop');
       },
+    },
+    {
+      type: 'separator',
+    },
+    {
+      label: '⚙ Settings',
+      click: () => openSettingsWindow(),
     },
     {
       type: 'separator',
@@ -747,6 +829,17 @@ app.whenReady().then(async () => {
       logger.info(`Active window: [${windowInfo.process_name}] ${windowInfo.window_title}`);
     }, 3000);
   }
+
+  // seed HA token on first run (remove this block after initial setup)
+  if (!config.get('haToken')) {
+    config.set('haBaseUrl', 'http://homeassistant.local:8123');
+    config.set('haToken', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhYWM4NjIyMDUzZWM0ZGRjODE1YzJjNmM2YjZhMTE2NCIsImlhdCI6MTc3NDEwNjE4MSwiZXhwIjoyMDg5NDY2MTgxfQ.hSzTKsGSYbRq10jycYVTJ4lCdTx-9BTQiWNIjR46j1U');
+    logger.info('Seeded HA connection config from first-run defaults.');
+  }
+
+  // initial entity cache load + refresh every 60 seconds
+  await refreshEntityCache();
+  setInterval(refreshEntityCache, 60 * 1000);
 });
 
 app.on('will-quit', () => {
@@ -812,4 +905,51 @@ ipcMain.handle('get-media-status', async () => {
     webcam_active: stats.webcam_active,
     microphone_active: stats.microphone_active,
   };
+});
+
+// ── Settings window IPC ────────────────────────────────────────────────────
+ipcMain.on('settings-open', (event) => {
+  event.reply('settings-loaded', {
+    haBaseUrl: config.get('haBaseUrl'),
+    haToken:   config.get('haToken'),
+    pinnedEntities: config.get('pinnedEntities') || [],
+  });
+  // also push current entity list if we have one
+  if (cachedEntities.length) {
+    event.reply('entities-loaded', cachedEntities);
+  }
+});
+
+ipcMain.handle('save-settings', async (_event, { haBaseUrl, haToken }) => {
+  try {
+    config.set('haBaseUrl', haBaseUrl.trim());
+    config.set('haToken', haToken.trim());
+    const entities = await haClient.getToggleableEntities();
+    cachedEntities = entities;
+    return { ok: true, entities };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('test-connection', async (_event, { haBaseUrl, haToken }) => {
+  // temporarily override for the test without saving
+  const orig = { url: config.get('haBaseUrl'), token: config.get('haToken') };
+  config.set('haBaseUrl', haBaseUrl);
+  config.set('haToken', haToken);
+  try {
+    const states = await haClient.getStates();
+    config.set('haBaseUrl', orig.url);
+    config.set('haToken', orig.token);
+    return { ok: !!states, count: states?.length };
+  } catch (err) {
+    config.set('haBaseUrl', orig.url);
+    config.set('haToken', orig.token);
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('save-pinned', async (_event, pinnedEntities) => {
+  config.set('pinnedEntities', pinnedEntities);
+  return { ok: true };
 });

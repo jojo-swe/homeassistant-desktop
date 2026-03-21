@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Home Assistant Desktop — Settings</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ha-blue: #03a9f4;
+      --ha-blue-dark: #0288d1;
+      --surface: #1e1e2e;
+      --surface2: #2a2a3e;
+      --surface3: #32324a;
+      --text: #e0e0f0;
+      --text-muted: #8888aa;
+      --border: #3a3a54;
+      --success: #4caf50;
+      --danger: #ef5350;
+      --radius: 10px;
+    }
+
+    html, body {
+      font-family: 'Inter', sans-serif;
+      background: var(--surface);
+      color: var(--text);
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 20px;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header img { width: 28px; height: 28px; }
+
+    .header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .field input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    .field input:focus { border-color: var(--ha-blue); }
+    .field input::placeholder { color: var(--text-muted); }
+
+    .btn {
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 16px;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary { background: var(--ha-blue); color: #fff; }
+    .btn-danger  { background: var(--danger); color: #fff; font-size: 12px; padding: 7px 12px; }
+    .btn-secondary { background: var(--surface3); color: var(--text); }
+
+    .row { display: flex; gap: 8px; }
+
+    .status-msg {
+      font-size: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: none;
+    }
+    .status-msg.ok    { background: rgba(76,175,80,0.15); color: var(--success); display: block; }
+    .status-msg.error { background: rgba(239,83,80,0.15); color: var(--danger);  display: block; }
+
+    /* Entity Picker */
+    .entity-search {
+      position: relative;
+    }
+    .entity-search input { width: 100%; }
+
+    .entity-list {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .entity-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background 0.12s;
+      border-bottom: 1px solid var(--border);
+      user-select: none;
+    }
+    .entity-item:last-child { border-bottom: none; }
+    .entity-item:hover { background: var(--surface3); }
+    .entity-item.pinned { border-left: 3px solid var(--ha-blue); }
+
+    .entity-name { font-size: 13px; font-weight: 500; }
+    .entity-id   { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+    .entity-state {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      min-width: 36px;
+      text-align: center;
+    }
+    .entity-state.on  { background: rgba(3,169,244,0.2); color: var(--ha-blue); }
+    .entity-state.off { background: rgba(136,136,170,0.15); color: var(--text-muted); }
+
+    .pinned-section { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+    .pin-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(3,169,244,0.15);
+      border: 1px solid rgba(3,169,244,0.3);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ha-blue);
+    }
+    .pin-chip button {
+      background: none;
+      border: none;
+      color: var(--ha-blue);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
+      opacity: 0.7;
+    }
+    .pin-chip button:hover { opacity: 1; }
+
+    .empty-state {
+      color: var(--text-muted);
+      font-size: 12px;
+      font-style: italic;
+      padding: 4px 0;
+    }
+
+    .loading {
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- Header -->
+  <div class="header">
+    <img src="assets/favicon.png" alt="Home Assistant"/>
+    <h1>Settings</h1>
+  </div>
+
+  <!-- Connection -->
+  <div>
+    <div class="section-title">Home Assistant Connection</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+
+      <div class="field">
+        <label for="haUrl">Base URL</label>
+        <input type="url" id="haUrl" placeholder="http://homeassistant.local:8123"/>
+      </div>
+
+      <div class="field">
+        <label for="haToken">Long-Lived Access Token</label>
+        <input type="password" id="haToken" placeholder="eyJ..."/>
+      </div>
+
+      <div id="connStatus" class="status-msg"></div>
+
+      <div class="row">
+        <button class="btn btn-primary" id="saveConn" onclick="saveConnection()">Save & Test</button>
+        <button class="btn btn-secondary" onclick="testConnection()">Test Only</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pinned Entities -->
+  <div>
+    <div class="section-title">Quick Action Entities</div>
+    <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px;padding:0;">
+      Click entities below to pin them to your tray menu.
+    </p>
+
+    <!-- Current pins -->
+    <div id="pinned" class="pinned-section">
+      <span class="empty-state">No entities pinned yet.</span>
+    </div>
+
+    <div style="margin-top:10px;" class="entity-search">
+      <div class="field" style="margin-bottom:8px;">
+        <label for="entitySearch">Filter entities</label>
+        <input type="search" id="entitySearch" placeholder="e.g. light, switch, lamp..." oninput="filterEntities(this.value)"/>
+      </div>
+    </div>
+
+    <div id="entityList" class="entity-list">
+      <div class="loading">Connect to Home Assistant first to see entities.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let allEntities = [];
+  let pinnedIds = [];
+
+  window.api.on('settings-loaded', (settings) => {
+    document.getElementById('haUrl').value = settings.haBaseUrl || '';
+    document.getElementById('haToken').value = settings.haToken || '';
+    pinnedIds = settings.pinnedEntities || [];
+    renderPins();
+  });
+
+  window.api.on('entities-loaded', (entities) => {
+    allEntities = entities;
+    renderEntityList(entities);
+  });
+
+  window.api.send('settings-open');
+
+  function showStatus(msg, isOk) {
+    const el = document.getElementById('connStatus');
+    el.textContent = msg;
+    el.className = 'status-msg ' + (isOk ? 'ok' : 'error');
+  }
+
+  async function saveConnection() {
+    const url = document.getElementById('haUrl').value.trim();
+    const token = document.getElementById('haToken').value.trim();
+    if (!url || !token) { showStatus('Please fill in both fields.', false); return; }
+    showStatus('Saving & testing…', true);
+    const result = await window.api.invoke('save-settings', { haBaseUrl: url, haToken: token });
+    if (result.ok) {
+      showStatus('✓ Connected successfully!', true);
+      allEntities = result.entities || [];
+      renderEntityList(allEntities);
+    } else {
+      showStatus('✗ Connection failed: ' + (result.error || 'Unknown error'), false);
+    }
+  }
+
+  async function testConnection() {
+    const url = document.getElementById('haUrl').value.trim();
+    const token = document.getElementById('haToken').value.trim();
+    showStatus('Testing…', true);
+    const result = await window.api.invoke('test-connection', { haBaseUrl: url, haToken: token });
+    showStatus(result.ok ? '✓ Connected!' : '✗ ' + (result.error || 'Failed'), result.ok);
+  }
+
+  function filterEntities(q) {
+    const filtered = q
+      ? allEntities.filter(e => e.name.toLowerCase().includes(q.toLowerCase()) || e.entity_id.toLowerCase().includes(q.toLowerCase()))
+      : allEntities;
+    renderEntityList(filtered);
+  }
+
+  function renderEntityList(entities) {
+    const el = document.getElementById('entityList');
+    if (!entities.length) {
+      el.innerHTML = '<div class="loading">No entities found.</div>';
+      return;
+    }
+    el.innerHTML = entities.map(e => `
+      <div class="entity-item ${pinnedIds.includes(e.entity_id) ? 'pinned' : ''}" onclick="togglePin('${e.entity_id}')" id="ei-${e.entity_id.replace(/\./g,'-')}">
+        <div>
+          <div class="entity-name">${e.name}</div>
+          <div class="entity-id">${e.entity_id}</div>
+        </div>
+        <span class="entity-state ${e.state === 'on' ? 'on' : 'off'}">${e.state}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderPins() {
+    const el = document.getElementById('pinned');
+    if (!pinnedIds.length) {
+      el.innerHTML = '<span class="empty-state">No entities pinned yet.</span>';
+      return;
+    }
+    el.innerHTML = pinnedIds.map(id => {
+      const entity = allEntities.find(e => e.entity_id === id);
+      const name = entity?.name || id;
+      return `<div class="pin-chip">${name} <button onclick="unpin('${id}')" title="Remove">×</button></div>`;
+    }).join('');
+  }
+
+  async function togglePin(entityId) {
+    if (pinnedIds.includes(entityId)) {
+      unpin(entityId);
+    } else {
+      pinnedIds.push(entityId);
+      await window.api.invoke('save-pinned', pinnedIds);
+      renderPins();
+      renderEntityList(document.getElementById('entitySearch').value
+        ? allEntities.filter(e => e.name.toLowerCase().includes(document.getElementById('entitySearch').value.toLowerCase()))
+        : allEntities);
+    }
+  }
+
+  async function unpin(entityId) {
+    pinnedIds = pinnedIds.filter(id => id !== entityId);
+    await window.api.invoke('save-pinned', pinnedIds);
+    renderPins();
+    renderEntityList(allEntities);
+  }
+</script>
+</body>
+</html>

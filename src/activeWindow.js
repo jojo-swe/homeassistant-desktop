@@ -5,28 +5,11 @@ let lastWindowTitle = null;
 let lastWindowProcess = null;
 let pollInterval = null;
 
+// Simple Get-Process query — no C# P/Invoke, no DllImport, AV-safe
 const PS_SCRIPT = `
-Add-Type @"
-  using System;
-  using System.Runtime.InteropServices;
-  public class Win32 {
-    [DllImport("user32.dll")]
-    public static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")]
-    public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int count);
-    [DllImport("user32.dll")]
-    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
-  }
-"@
-$hwnd = [Win32]::GetForegroundWindow()
-$sb = New-Object System.Text.StringBuilder 256
-[Win32]::GetWindowText($hwnd, $sb, 256) | Out-Null
-$title = $sb.ToString()
-$pid = 0
-[Win32]::GetWindowThreadProcessId($hwnd, [ref]$pid) | Out-Null
-$proc = Get-Process -Id $pid -ErrorAction SilentlyContinue
-$name = if ($proc) { $proc.Name } else { "Unknown" }
-Write-Output "$name|$title"
+$procs = Get-Process | Where-Object { $_.MainWindowTitle -ne '' } | Sort-Object CPU -Descending;
+$top = $procs | Select-Object -First 1;
+if ($top) { Write-Output "$($top.Name)|$($top.MainWindowTitle)" } else { Write-Output '|' }
 `;
 
 /**

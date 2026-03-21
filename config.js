@@ -9,6 +9,9 @@ module.exports = new Store({
     stayOnTop: false,
     fullScreen: false,
     shortcutEnabled: false,
-    allInstances: []
+    allInstances: [],
+    haBaseUrl: '',
+    haToken: '',
+    pinnedEntities: [],
   }
 });
