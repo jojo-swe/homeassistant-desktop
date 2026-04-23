@@ -1,0 +1,84 @@
+app-id: io.github.jojo_swe.homeassistant-desktop
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+base: org.electronjs.Electron2.BaseApp
+base-version: '24.08'
+command: run.sh
+separate-locales: false
+
+finish-args:
+  # Windowing
+  - --socket=x11
+  - --socket=wayland
+  - --share=ipc
+
+  # GPU acceleration
+  - --device=dri
+
+  # Network access (connecting to Home Assistant)
+  - --share=network
+
+  # Tray icon (StatusNotifierItem / AppIndicator)
+  - --talk-name=org.kde.StatusNotifierWatcher
+
+  # Notifications
+  - --talk-name=org.freedesktop.Notifications
+
+  # mDNS discovery (Bonjour/Avahi for auto-discovering HA instances)
+  - --system-talk-name=org.freedesktop.Avahi
+
+  # Screen lock and suspend commands (loginctl, systemctl)
+  - --system-talk-name=org.freedesktop.login1
+
+  # Persistent config storage
+  - --filesystem=xdg-config/homeassistant-desktop:create
+
+modules:
+  - name: homeassistant-desktop
+    buildsystem: simple
+    sources:
+      - type: file
+        # Update URL and sha256 for each release.
+        # Use the .deb artifact from GitHub Releases.
+        url: https://github.com/jojo-swe/homeassistant-desktop/releases/download/v1.5.4/Home%20Assistant%20Desktop-v1.5.4-linux-x64.deb
+        sha256: FILL_IN_AFTER_BUILDING
+        dest-filename: homeassistant-desktop.deb
+        only-arches:
+          - x86_64
+
+      - type: file
+        path: io.github.jojo_swe.homeassistant-desktop.desktop
+
+      - type: file
+        path: io.github.jojo_swe.homeassistant-desktop.metainfo.xml
+
+      - type: script
+        dest-filename: run.sh
+        commands:
+          - export TMPDIR="$XDG_RUNTIME_DIR/app/${FLATPAK_ID:-io.github.jojo_swe.homeassistant-desktop}"
+          - exec zypak-wrapper /app/homeassistant-desktop/homeassistant-desktop --ozone-platform-hint=auto "$@"
+
+    build-commands:
+      # Extract the .deb package
+      - ar x homeassistant-desktop.deb
+      - tar xf data.tar.*
+
+      # Install the Electron app
+      - mv "opt/Home Assistant Desktop" /app/homeassistant-desktop
+
+      # Install the launcher script
+      - install -Dm755 run.sh /app/bin/run.sh
+
+      # Install desktop integration files
+      - install -Dm644 io.github.jojo_swe.homeassistant-desktop.desktop /app/share/applications/io.github.jojo_swe.homeassistant-desktop.desktop
+      - install -Dm644 io.github.jojo_swe.homeassistant-desktop.metainfo.xml /app/share/metainfo/io.github.jojo_swe.homeassistant-desktop.metainfo.xml
+
+      # Install icons from the extracted .deb
+      - |
+        for size in 16 32 48 64 128 256 512; do
+          icon="usr/share/icons/hicolor/${size}x${size}/apps/homeassistant-desktop.png"
+          if [ -f "$icon" ]; then
+            install -Dm644 "$icon" "/app/share/icons/hicolor/${size}x${size}/apps/io.github.jojo_swe.homeassistant-desktop.png"
+          fi
+        done

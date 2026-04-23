@@ -6,7 +6,7 @@
   },
   "version": "1.5.4",
   "description": "Desktop App (Windows / macOS / Linux) for Home Assistant built with Electron",
-  "author": "Ivan Prodanov",
+  "author": "Ivan Prodanov <mail@iprodanov.com>",
   "license": "Apache-2.0",
   "main": "app.js",
   "scripts": {
@@ -18,7 +18,7 @@
     "build-local-linux-arm": "electron-builder build --linux rpm --arm64 --publish never",
     "build-local-win": "electron-builder build --win --x64 --publish never",
     "build-local-win-arm": "electron-builder build --win --arm64 --publish never",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test tests/*.js"
   },
   "dependencies": {
     "bonjour-service": "^1.0.14",
@@ -30,13 +30,14 @@
   },
   "devDependencies": {
     "electron": "^32.0.0",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "yaml": "^2.8.3"
   },
   "engines": {
-    "node": ">= 20"
+    "node": ">= 22"
   },
   "build": {
-    "appId": "com.electron.homeassistant-desktop",
+    "appId": "io.github.jojo_swe.homeassistant-desktop",
     "artifactName": "${productName}-v${version}-${os}-${arch}.${ext}",
     "productName": "Home Assistant Desktop",
     "mac": {
@@ -60,6 +61,15 @@
         "AppImage",
         "deb",
         "rpm"
+      ],
+      "category": "Network",
+      "desktop": {
+        "StartupWMClass": "homeassistant-desktop"
+      }
+    },
+    "deb": {
+      "depends": [
+        "libayatana-appindicator3-1"
       ]
     }
   }

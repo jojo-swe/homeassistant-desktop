@@ -40,6 +40,8 @@ You can fetch the desktop sensors (CPU, Active Window, Webcam) from the Home Ass
 
 Pull requests are always welcome. For major changes involving the Electron main-process or external native dependencies, please open an issue first to discuss the architecture.
 
+Run `npm test` before pushing to verify that release metadata is consistent.
+
 For a full list of changes in the latest releases, see the [CHANGELOG.md](./CHANGELOG.md).
 
 ---

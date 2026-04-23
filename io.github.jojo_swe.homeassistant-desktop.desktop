@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Home Assistant Desktop
+Comment=Desktop companion app for Home Assistant
+Exec=homeassistant-desktop %U
+Icon=io.github.jojo_swe.homeassistant-desktop
+Terminal=false
+Type=Application
+Categories=Network;
+StartupWMClass=homeassistant-desktop
