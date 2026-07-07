@@ -12,20 +12,20 @@ updates:
       - dependencies
       - dev
     commit-message:
-      prefix: "chore(deps-dev)"
+      prefix: 'chore(deps-dev)'
     groups:
       eslint:
         patterns:
-          - "eslint"
-          - "@eslint/*"
+          - 'eslint'
+          - '@eslint/*'
       jest:
         patterns:
-          - "jest"
-          - "@types/jest"
+          - 'jest'
+          - '@types/jest'
       electron-builder:
         patterns:
-          - "electron-builder"
-          - "@electron/*"
+          - 'electron-builder'
+          - '@electron/*'
 
   # GitHub Actions — monthly
   - package-ecosystem: github-actions
@@ -36,4 +36,4 @@ updates:
       - dependencies
       - ci
     commit-message:
-      prefix: "chore(ci)"
+      prefix: 'chore(ci)'
