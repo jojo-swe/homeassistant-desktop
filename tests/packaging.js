@@ -77,10 +77,6 @@ if (!pkg.build.linux?.category) {
   fail('package.json linux.category is missing (required for .desktop file)');
 }
 
-if (!pkg.build.linux?.desktop?.StartupWMClass) {
-  fail('package.json linux.desktop.StartupWMClass is missing');
-}
-
 // --- package.json: deb dependencies ---
 
 const debDeps = pkg.build.deb?.depends || [];

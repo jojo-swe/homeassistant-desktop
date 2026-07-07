@@ -80,10 +80,7 @@
         "deb",
         "rpm"
       ],
-      "category": "Network",
-      "desktop": {
-        "StartupWMClass": "homeassistant-desktop"
-      }
+      "category": "Network"
     },
     "deb": {
       "depends": [
