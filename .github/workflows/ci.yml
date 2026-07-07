@@ -66,10 +66,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Install Playwright browsers
-        run: npx playwright install chromium
+      - name: Install Electron system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 xdg-utils libatspi2.0-0 libdrm2 libgbm1
 
       - name: Build and run E2E tests
-        run: npm run test:e2e
-        env:
-          DISPLAY: ':99'
+        run: xvfb-run -a npm run test:e2e
