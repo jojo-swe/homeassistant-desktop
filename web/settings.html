@@ -1,409 +1,518 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <title>Home Assistant Desktop — Settings</title>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <head>
+    <title>Home Assistant Desktop — Settings</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link href="assets/theme.css" rel="stylesheet" />
+    <style>
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+      }
 
-    :root {
-      --ha-blue: #03a9f4;
-      --ha-blue-dark: #0288d1;
-      --surface: #1e1e2e;
-      --surface2: #2a2a3e;
-      --surface3: #32324a;
-      --text: #e0e0f0;
-      --text-muted: #8888aa;
-      --border: #3a3a54;
-      --success: #4caf50;
-      --danger: #ef5350;
-      --radius: 10px;
-    }
+      .app {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding: 20px;
+        gap: 16px;
+        overflow-y: auto;
+      }
 
-    html, body {
-      font-family: 'Inter', sans-serif;
-      background: var(--surface);
-      color: var(--text);
-      height: 100%;
-      overflow: hidden;
-    }
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+      }
 
-    .app {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      padding: 20px;
-      gap: 16px;
-      overflow-y: auto;
-    }
+      .header img {
+        width: 28px;
+        height: 28px;
+      }
 
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
+      .header h1 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+      }
 
-    .header img { width: 28px; height: 28px; }
+      .section-title {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
 
-    .header h1 {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text);
-    }
+      .row {
+        display: flex;
+        gap: 8px;
+      }
 
-    .section-title {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
+      /* Token show/hide */
+      .token-wrapper {
+        position: relative;
+      }
+      .token-wrapper input {
+        padding-right: 40px;
+      }
+      .token-toggle {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 4px;
+      }
+      .token-toggle:hover {
+        color: var(--text);
+      }
 
-    .field { display: flex; flex-direction: column; gap: 6px; }
+      /* Entity Picker */
+      .entity-search {
+        position: relative;
+      }
+      .entity-search input {
+        width: 100%;
+      }
 
-    .field label {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text-muted);
-    }
+      .entity-list {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        max-height: 200px;
+        overflow-y: auto;
+      }
 
-    .field input {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      padding: 9px 12px;
-      outline: none;
-      transition: border-color 0.2s;
-      width: 100%;
-    }
+      .entity-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background 0.12s;
+        border-bottom: 1px solid var(--border);
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      .entity-item:last-child {
+        border-bottom: none;
+      }
+      .entity-item:hover {
+        background: var(--surface3);
+      }
+      .entity-item.pinned {
+        border-left: 3px solid var(--ha-blue);
+      }
 
-    .field input:focus { border-color: var(--ha-blue); }
-    .field input::placeholder { color: var(--text-muted); }
+      .entity-name {
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .entity-id {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 1px;
+      }
+      .entity-state {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 20px;
+        min-width: 36px;
+        text-align: center;
+      }
+      .entity-state.on {
+        background: rgba(3, 169, 244, 0.2);
+        color: var(--ha-blue);
+      }
+      .entity-state.off {
+        background: rgba(136, 136, 170, 0.15);
+        color: var(--text-muted);
+      }
 
-    .btn {
-      border: none;
-      border-radius: var(--radius);
-      cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      font-weight: 600;
-      padding: 9px 16px;
-      transition: opacity 0.15s, transform 0.1s;
-    }
-    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn:active { transform: translateY(0); }
-    .btn-primary { background: var(--ha-blue); color: #fff; }
-    .btn-danger  { background: var(--danger); color: #fff; font-size: 12px; padding: 7px 12px; }
-    .btn-secondary { background: var(--surface3); color: var(--text); }
+      .pinned-section {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-height: 28px;
+      }
+      .pin-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(3, 169, 244, 0.15);
+        border: 1px solid rgba(3, 169, 244, 0.3);
+        border-radius: 20px;
+        padding: 4px 10px;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--ha-blue);
+      }
+      .pin-chip button {
+        background: none;
+        border: none;
+        color: var(--ha-blue);
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        padding: 0;
+        opacity: 0.7;
+      }
+      .pin-chip button:hover {
+        opacity: 1;
+      }
 
-    .row { display: flex; gap: 8px; }
+      .empty-state {
+        color: var(--text-muted);
+        font-size: 12px;
+        font-style: italic;
+        padding: 4px 0;
+      }
 
-    .status-msg {
-      font-size: 12px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      display: none;
-    }
-    .status-msg.ok    { background: rgba(76,175,80,0.15); color: var(--success); display: block; }
-    .status-msg.error { background: rgba(239,83,80,0.15); color: var(--danger);  display: block; }
+      .loading {
+        color: var(--text-muted);
+        font-size: 12px;
+        padding: 12px;
+        text-align: center;
+      }
 
-    /* Entity Picker */
-    .entity-search {
-      position: relative;
-    }
-    .entity-search input { width: 100%; }
+      /* Entity pagination */
+      .entity-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 6px 0;
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+      .entity-pagination button {
+        background: var(--surface3);
+        border: none;
+        border-radius: 4px;
+        color: var(--text);
+        cursor: pointer;
+        font-size: 11px;
+        padding: 3px 10px;
+      }
+      .entity-pagination button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
 
-    .entity-list {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
-    .entity-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      cursor: pointer;
-      transition: background 0.12s;
-      border-bottom: 1px solid var(--border);
-      -webkit-user-select: none;
-      user-select: none;
-    }
-    .entity-item:last-child { border-bottom: none; }
-    .entity-item:hover { background: var(--surface3); }
-    .entity-item.pinned { border-left: 3px solid var(--ha-blue); }
-
-    .entity-name { font-size: 13px; font-weight: 500; }
-    .entity-id   { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
-    .entity-state {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 20px;
-      min-width: 36px;
-      text-align: center;
-    }
-    .entity-state.on  { background: rgba(3,169,244,0.2); color: var(--ha-blue); }
-    .entity-state.off { background: rgba(136,136,170,0.15); color: var(--text-muted); }
-
-    .pinned-section { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
-    .pin-chip {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(3,169,244,0.15);
-      border: 1px solid rgba(3,169,244,0.3);
-      border-radius: 20px;
-      padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--ha-blue);
-    }
-    .pin-chip button {
-      background: none;
-      border: none;
-      color: var(--ha-blue);
-      cursor: pointer;
-      font-size: 14px;
-      line-height: 1;
-      padding: 0;
-      opacity: 0.7;
-    }
-    .pin-chip button:hover { opacity: 1; }
-
-    .empty-state {
-      color: var(--text-muted);
-      font-size: 12px;
-      font-style: italic;
-      padding: 4px 0;
-    }
-
-    .loading {
-      color: var(--text-muted);
-      font-size: 12px;
-      padding: 12px;
-      text-align: center;
-    }
-
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-  </style>
-</head>
-<body>
-<div class="app" id="app">
-  <!-- Header -->
-  <div class="header">
-    <img src="assets/favicon.png" alt="Home Assistant"/>
-    <h1>Settings</h1>
-  </div>
-
-  <!-- Connection -->
-  <div>
-    <div class="section-title">Home Assistant Connection</div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-
-      <div class="field">
-        <label for="haUrl">Base URL</label>
-        <input type="url" id="haUrl" placeholder="http://homeassistant.local:8123"/>
+      /* Toast notification */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--surface3);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-size: 12px;
+        color: var(--text);
+        opacity: 0;
+        transform: translateY(10px);
+        transition:
+          opacity 0.2s,
+          transform 0.2s;
+        pointer-events: none;
+        z-index: 1000;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .toast.ok {
+        border-color: var(--success);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app" id="app">
+      <!-- Header -->
+      <div class="header">
+        <img src="assets/favicon.png" alt="Home Assistant" />
+        <h1>Settings</h1>
       </div>
 
-      <div class="field">
-        <label for="haToken">Long-Lived Access Token</label>
-        <input type="password" id="haToken" placeholder="eyJ..."/>
+      <!-- Connection -->
+      <div>
+        <div class="section-title">Home Assistant Connection</div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div class="field">
+            <label for="haUrl">Base URL</label>
+            <input type="url" id="haUrl" placeholder="http://homeassistant.local:8123" />
+          </div>
+
+          <div class="field">
+            <label for="haToken">Long-Lived Access Token</label>
+            <div class="token-wrapper">
+              <input type="password" id="haToken" placeholder="eyJ..." />
+              <button class="token-toggle" onclick="toggleTokenVisibility()" title="Show/hide token">👁</button>
+            </div>
+          </div>
+
+          <div id="connStatus" class="status-msg"></div>
+
+          <div class="row">
+            <button class="btn btn-primary" id="saveConn" onclick="saveConnection()">Save & Test</button>
+            <button class="btn btn-secondary" onclick="testConnection()">Test Only</button>
+          </div>
+        </div>
       </div>
 
-      <div id="connStatus" class="status-msg"></div>
+      <!-- Pinned Entities -->
+      <div>
+        <div class="section-title">Quick Action Entities</div>
+        <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 10px; padding: 0">
+          Click entities below to pin them to your tray menu.
+        </p>
 
-      <div class="row">
-        <button class="btn btn-primary" id="saveConn" onclick="saveConnection()">Save & Test</button>
-        <button class="btn btn-secondary" onclick="testConnection()">Test Only</button>
+        <!-- Current pins -->
+        <div id="pinned" class="pinned-section">
+          <span class="empty-state">No entities pinned yet.</span>
+        </div>
+
+        <div style="margin-top: 10px" class="entity-search">
+          <div class="field" style="margin-bottom: 8px">
+            <label for="entitySearch">Filter entities</label>
+            <input
+              type="search"
+              id="entitySearch"
+              placeholder="e.g. light, switch, lamp..."
+              oninput="filterEntities(this.value)"
+            />
+          </div>
+        </div>
+
+        <div id="entityList" class="entity-list">
+          <div class="loading">Connect to Home Assistant first to see entities.</div>
+        </div>
       </div>
+
+      <!-- Shortcuts -->
+      <div style="margin-top: 10px; margin-bottom: 20px">
+        <div class="section-title">Global Shortcuts</div>
+        <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 10px; padding: 0">
+          Bind global keyboard combos to any toggleable entity.
+        </p>
+        <div id="shortcutsList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px"></div>
+
+        <div class="row" style="align-items: flex-end">
+          <div class="field" style="flex: 1">
+            <label>Keys (e.g. CommandOrControl+Shift+1)</label>
+            <input type="text" id="shortcutKeys" placeholder="CommandOrControl+Shift+L" />
+          </div>
+          <div class="field" style="flex: 1">
+            <label>Entity ID</label>
+            <input type="text" id="shortcutEntity" placeholder="light.living_room" list="entityDatalist" />
+            <datalist id="entityDatalist"></datalist>
+          </div>
+          <button class="btn btn-primary" onclick="addShortcut()" style="margin-bottom: 1px">Add</button>
+        </div>
+      </div>
+      <div id="toast" class="toast"></div>
     </div>
-  </div>
 
-  <!-- Pinned Entities -->
-  <div>
-    <div class="section-title">Quick Action Entities</div>
-    <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px;padding:0;">
-      Click entities below to pin them to your tray menu.
-    </p>
+    <script>
+      let allEntities = [];
+      let pinnedIds = [];
+      let allShortcuts = [];
 
-    <!-- Current pins -->
-    <div id="pinned" class="pinned-section">
-      <span class="empty-state">No entities pinned yet.</span>
-    </div>
+      window.api.on('settings-loaded', (settings) => {
+        document.getElementById('haUrl').value = settings.haBaseUrl || '';
+        document.getElementById('haToken').value = settings.haToken || '';
+        pinnedIds = settings.pinnedEntities || [];
+        renderPins();
+        loadShortcuts();
+      });
 
-    <div style="margin-top:10px;" class="entity-search">
-      <div class="field" style="margin-bottom:8px;">
-        <label for="entitySearch">Filter entities</label>
-        <input type="search" id="entitySearch" placeholder="e.g. light, switch, lamp..." oninput="filterEntities(this.value)"/>
-      </div>
-    </div>
+      window.api.on('entities-loaded', (entities) => {
+        allEntities = entities;
+        renderEntityList(entities);
+        updateDatalist(entities);
+      });
 
-    <div id="entityList" class="entity-list">
-      <div class="loading">Connect to Home Assistant first to see entities.</div>
-    </div>
-  </div>
+      window.api.send('settings-open');
 
-  <!-- Shortcuts -->
-  <div style="margin-top: 10px; margin-bottom: 20px;">
-    <div class="section-title">Global Shortcuts</div>
-    <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px;padding:0;">
-      Bind global keyboard combos to any toggleable entity.
-    </p>
-    <div id="shortcutsList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
-    
-    <div class="row" style="align-items:flex-end;">
-      <div class="field" style="flex:1;">
-        <label>Keys (e.g. CommandOrControl+Shift+1)</label>
-        <input type="text" id="shortcutKeys" placeholder="CommandOrControl+Shift+L"/>
-      </div>
-      <div class="field" style="flex:1;">
-        <label>Entity ID</label>
-        <input type="text" id="shortcutEntity" placeholder="light.living_room" list="entityDatalist"/>
-        <datalist id="entityDatalist"></datalist>
-      </div>
-      <button class="btn btn-primary" onclick="addShortcut()" style="margin-bottom:1px;">Add</button>
-    </div>
-  </div>
-</div>
+      function showToast(msg, isOk) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.className = 'toast show ' + (isOk ? 'ok' : '');
+        setTimeout(() => {
+          toast.className = 'toast';
+        }, 2500);
+      }
 
-<script>
-  let allEntities = [];
-  let pinnedIds = [];
-  let allShortcuts = [];
+      function toggleTokenVisibility() {
+        const input = document.getElementById('haToken');
+        input.type = input.type === 'password' ? 'text' : 'password';
+      }
 
-  window.api.on('settings-loaded', (settings) => {
-    document.getElementById('haUrl').value = settings.haBaseUrl || '';
-    document.getElementById('haToken').value = settings.haToken || '';
-    pinnedIds = settings.pinnedEntities || [];
-    renderPins();
-    loadShortcuts();
-  });
+      function showStatus(msg, isOk) {
+        const el = document.getElementById('connStatus');
+        el.textContent = msg;
+        el.className = 'status-msg ' + (isOk ? 'ok' : 'error');
+      }
 
-  window.api.on('entities-loaded', (entities) => {
-    allEntities = entities;
-    renderEntityList(entities);
-    updateDatalist(entities);
-  });
+      async function saveConnection() {
+        const url = document.getElementById('haUrl').value.trim();
+        const token = document.getElementById('haToken').value.trim();
+        if (!url || !token) {
+          showStatus('Please fill in both fields.', false);
+          return;
+        }
+        showStatus('Saving & testing…', true);
+        const result = await window.api.invoke('save-settings', { haBaseUrl: url, haToken: token });
+        if (result.ok) {
+          showStatus('✓ Connected successfully!', true);
+          showToast('Settings saved', true);
+          allEntities = result.entities || [];
+          renderEntityList(allEntities);
+        } else {
+          showStatus('✗ Connection failed: ' + (result.error || 'Unknown error'), false);
+        }
+      }
 
-  window.api.send('settings-open');
+      async function testConnection() {
+        const url = document.getElementById('haUrl').value.trim();
+        const token = document.getElementById('haToken').value.trim();
+        showStatus('Testing…', true);
+        const result = await window.api.invoke('test-connection', { haBaseUrl: url, haToken: token });
+        showStatus(result.ok ? '✓ Connected!' : '✗ ' + (result.error || 'Failed'), result.ok);
+      }
 
-  function showStatus(msg, isOk) {
-    const el = document.getElementById('connStatus');
-    el.textContent = msg;
-    el.className = 'status-msg ' + (isOk ? 'ok' : 'error');
-  }
+      function filterEntities(q) {
+        const filtered = q
+          ? allEntities.filter(
+              (e) =>
+                e.name.toLowerCase().includes(q.toLowerCase()) || e.entity_id.toLowerCase().includes(q.toLowerCase())
+            )
+          : allEntities;
+        renderEntityList(filtered);
+      }
 
-  async function saveConnection() {
-    const url = document.getElementById('haUrl').value.trim();
-    const token = document.getElementById('haToken').value.trim();
-    if (!url || !token) { showStatus('Please fill in both fields.', false); return; }
-    showStatus('Saving & testing…', true);
-    const result = await window.api.invoke('save-settings', { haBaseUrl: url, haToken: token });
-    if (result.ok) {
-      showStatus('✓ Connected successfully!', true);
-      allEntities = result.entities || [];
-      renderEntityList(allEntities);
-    } else {
-      showStatus('✗ Connection failed: ' + (result.error || 'Unknown error'), false);
-    }
-  }
+      const PAGE_SIZE = 50;
+      let currentPage = 0;
+      let currentFiltered = [];
 
-  async function testConnection() {
-    const url = document.getElementById('haUrl').value.trim();
-    const token = document.getElementById('haToken').value.trim();
-    showStatus('Testing…', true);
-    const result = await window.api.invoke('test-connection', { haBaseUrl: url, haToken: token });
-    showStatus(result.ok ? '✓ Connected!' : '✗ ' + (result.error || 'Failed'), result.ok);
-  }
+      function renderEntityList(entities) {
+        const el = document.getElementById('entityList');
+        currentFiltered = entities;
+        currentPage = 0;
+        renderEntityPage();
+      }
 
-  function filterEntities(q) {
-    const filtered = q
-      ? allEntities.filter(e => e.name.toLowerCase().includes(q.toLowerCase()) || e.entity_id.toLowerCase().includes(q.toLowerCase()))
-      : allEntities;
-    renderEntityList(filtered);
-  }
-
-  function renderEntityList(entities) {
-    const el = document.getElementById('entityList');
-    if (!entities.length) {
-      el.innerHTML = '<div class="loading">No entities found.</div>';
-      return;
-    }
-    el.innerHTML = entities.map(e => `
-      <div class="entity-item ${pinnedIds.includes(e.entity_id) ? 'pinned' : ''}" onclick="togglePin('${e.entity_id}')" id="ei-${e.entity_id.replace(/\./g,'-')}">
+      function renderEntityPage() {
+        const el = document.getElementById('entityList');
+        if (!currentFiltered.length) {
+          el.innerHTML = '<div class="loading">No entities found.</div>';
+          return;
+        }
+        const start = currentPage * PAGE_SIZE;
+        const pageItems = currentFiltered.slice(start, start + PAGE_SIZE);
+        const totalPages = Math.ceil(currentFiltered.length / PAGE_SIZE);
+        let html = pageItems
+          .map(
+            (e) => `
+      <div class="entity-item ${pinnedIds.includes(e.entity_id) ? 'pinned' : ''}" onclick="togglePin('${e.entity_id}')" id="ei-${e.entity_id.replace(/\./g, '-')}">
         <div>
           <div class="entity-name">${e.name}</div>
           <div class="entity-id">${e.entity_id}</div>
         </div>
         <span class="entity-state ${e.state === 'on' ? 'on' : 'off'}">${e.state}</span>
       </div>
-    `).join('');
-  }
+    `
+          )
+          .join('');
+        if (totalPages > 1) {
+          html += `
+          <div class="entity-pagination">
+            <button onclick="changePage(-1)" ${currentPage === 0 ? 'disabled' : ''}>‹ Prev</button>
+            <span>Page ${currentPage + 1} of ${totalPages} (${currentFiltered.length} entities)</span>
+            <button onclick="changePage(1)" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>Next ›</button>
+          </div>`;
+        }
+        el.innerHTML = html;
+      }
 
-  function renderPins() {
-    const el = document.getElementById('pinned');
-    if (!pinnedIds.length) {
-      el.innerHTML = '<span class="empty-state">No entities pinned yet.</span>';
-      return;
-    }
-    el.innerHTML = pinnedIds.map(id => {
-      const entity = allEntities.find(e => e.entity_id === id);
-      const name = entity?.name || id;
-      return `<div class="pin-chip">${name} <button onclick="unpin('${id}')" title="Remove">×</button></div>`;
-    }).join('');
-  }
+      function changePage(dir) {
+        currentPage += dir;
+        renderEntityPage();
+      }
 
-  async function togglePin(entityId) {
-    if (pinnedIds.includes(entityId)) {
-      unpin(entityId);
-    } else {
-      pinnedIds.push(entityId);
-      await window.api.invoke('save-pinned', pinnedIds);
-      renderPins();
-      renderEntityList(document.getElementById('entitySearch').value
-        ? allEntities.filter(e => e.name.toLowerCase().includes(document.getElementById('entitySearch').value.toLowerCase()))
-        : allEntities);
-    }
-  }
+      function renderPins() {
+        const el = document.getElementById('pinned');
+        if (!pinnedIds.length) {
+          el.innerHTML = '<span class="empty-state">No entities pinned yet.</span>';
+          return;
+        }
+        el.innerHTML = pinnedIds
+          .map((id) => {
+            const entity = allEntities.find((e) => e.entity_id === id);
+            const name = entity?.name || id;
+            return `<div class="pin-chip">${name} <button onclick="unpin('${id}')" title="Remove">×</button></div>`;
+          })
+          .join('');
+      }
 
-  async function unpin(entityId) {
-    pinnedIds = pinnedIds.filter(id => id !== entityId);
-    await window.api.invoke('save-pinned', pinnedIds);
-    renderPins();
-    renderEntityList(allEntities);
-  }
+      async function togglePin(entityId) {
+        if (pinnedIds.includes(entityId)) {
+          unpin(entityId);
+        } else {
+          pinnedIds.push(entityId);
+          await window.api.invoke('save-pinned', pinnedIds);
+          renderPins();
+          renderEntityList(
+            document.getElementById('entitySearch').value
+              ? allEntities.filter((e) =>
+                  e.name.toLowerCase().includes(document.getElementById('entitySearch').value.toLowerCase())
+                )
+              : allEntities
+          );
+        }
+      }
 
-  function updateDatalist(entities) {
-    document.getElementById('entityDatalist').innerHTML = entities.map(e => `<option value="${e.entity_id}">${e.name}</option>`).join('');
-  }
+      async function unpin(entityId) {
+        pinnedIds = pinnedIds.filter((id) => id !== entityId);
+        await window.api.invoke('save-pinned', pinnedIds);
+        renderPins();
+        renderEntityList(allEntities);
+      }
 
-  async function loadShortcuts() {
-    allShortcuts = await window.api.invoke('get-shortcuts');
-    renderShortcuts();
-  }
+      function updateDatalist(entities) {
+        document.getElementById('entityDatalist').innerHTML = entities
+          .map((e) => `<option value="${e.entity_id}">${e.name}</option>`)
+          .join('');
+      }
 
-  function renderShortcuts() {
-    const el = document.getElementById('shortcutsList');
-    if (!allShortcuts.length) {
-      el.innerHTML = '<span class="empty-state">No shortcuts defined.</span>';
-      return;
-    }
-    el.innerHTML = allShortcuts.map(s => `
+      async function loadShortcuts() {
+        allShortcuts = await window.api.invoke('get-shortcuts');
+        renderShortcuts();
+      }
+
+      function renderShortcuts() {
+        const el = document.getElementById('shortcutsList');
+        if (!allShortcuts.length) {
+          el.innerHTML = '<span class="empty-state">No shortcuts defined.</span>';
+          return;
+        }
+        el.innerHTML = allShortcuts
+          .map(
+            (s) => `
       <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border);">
         <div>
           <div style="font-size:13px;font-weight:600;color:var(--ha-blue);">${s.accelerator}</div>
@@ -411,24 +520,26 @@
         </div>
         <button class="btn btn-danger" onclick="removeShortcut('${s.accelerator}')">Remove</button>
       </div>
-    `).join('');
-  }
+    `
+          )
+          .join('');
+      }
 
-  async function addShortcut() {
-    const keys = document.getElementById('shortcutKeys').value.trim();
-    const entity = document.getElementById('shortcutEntity').value.trim();
-    if (!keys || !entity) return;
-    
-    await window.api.invoke('save-shortcut', { accelerator: keys, entityId: entity, service: 'toggle' });
-    document.getElementById('shortcutKeys').value = '';
-    document.getElementById('shortcutEntity').value = '';
-    loadShortcuts();
-  }
+      async function addShortcut() {
+        const keys = document.getElementById('shortcutKeys').value.trim();
+        const entity = document.getElementById('shortcutEntity').value.trim();
+        if (!keys || !entity) return;
 
-  async function removeShortcut(keys) {
-    await window.api.invoke('remove-shortcut', keys);
-    loadShortcuts();
-  }
-</script>
-</body>
+        await window.api.invoke('save-shortcut', { accelerator: keys, entityId: entity, service: 'toggle' });
+        document.getElementById('shortcutKeys').value = '';
+        document.getElementById('shortcutEntity').value = '';
+        loadShortcuts();
+      }
+
+      async function removeShortcut(keys) {
+        await window.api.invoke('remove-shortcut', keys);
+        loadShortcuts();
+      }
+    </script>
+  </body>
 </html>

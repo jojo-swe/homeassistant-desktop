@@ -36,7 +36,9 @@ function registerAll() {
 
   // Unregister only our shortcuts (not the app-wide ones)
   shortcuts.forEach(({ accelerator }) => {
-    try { globalShortcut.unregister(accelerator); } catch (_) {}
+    try {
+      globalShortcut.unregister(accelerator);
+    } catch (_) {}
   });
 
   shortcuts.forEach(({ accelerator, entityId, service, domain }) => {
@@ -71,7 +73,9 @@ function registerAll() {
 function unregisterAll() {
   const shortcuts = load();
   shortcuts.forEach(({ accelerator }) => {
-    try { globalShortcut.unregister(accelerator); } catch (_) {}
+    try {
+      globalShortcut.unregister(accelerator);
+    } catch (_) {}
   });
 }
 
@@ -80,7 +84,7 @@ function unregisterAll() {
  */
 function upsert(shortcut) {
   const shortcuts = load();
-  const idx = shortcuts.findIndex(s => s.accelerator === shortcut.accelerator);
+  const idx = shortcuts.findIndex((s) => s.accelerator === shortcut.accelerator);
   if (idx >= 0) {
     shortcuts[idx] = shortcut;
   } else {
@@ -94,9 +98,12 @@ function upsert(shortcut) {
  * Removes a shortcut by accelerator key.
  */
 function remove(accelerator) {
-  try { globalShortcut.unregister(accelerator); } catch (_) {}
-  const shortcuts = load().filter(s => s.accelerator !== accelerator);
+  try {
+    globalShortcut.unregister(accelerator);
+  } catch (_) {}
+  const shortcuts = load().filter((s) => s.accelerator !== accelerator);
   save(shortcuts);
+  registerAll();
 }
 
 module.exports = { load, save, registerAll, unregisterAll, upsert, remove };

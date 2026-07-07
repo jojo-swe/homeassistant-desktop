@@ -19,39 +19,59 @@ const config = require('../config');
 const SystemMonitor = require('./systemMonitor');
 const { getActiveWindow, startTracking } = require('./activeWindow');
 
-const HOSTNAME = require('os').hostname().toLowerCase().replace(/[^a-z0-9]/g, '_');
+const HOSTNAME = require('os')
+  .hostname()
+  .toLowerCase()
+  .replace(/[^a-z0-9]/g, '_');
 
 // Entity IDs keyed on context
 const ENTITY_IDS = {
-  cpu:            `sensor.desktop_${HOSTNAME}_cpu_load`,
-  memory:         `sensor.desktop_${HOSTNAME}_memory_usage`,
-  battery:        `sensor.desktop_${HOSTNAME}_battery`,
-  activeWindow:   `sensor.desktop_${HOSTNAME}_active_window`,
-  webcam:         `binary_sensor.desktop_${HOSTNAME}_webcam`,
-  microphone:     `binary_sensor.desktop_${HOSTNAME}_microphone`,
-  userActive:     `binary_sensor.desktop_${HOSTNAME}_active`,
+  cpu: `sensor.desktop_${HOSTNAME}_cpu_load`,
+  memory: `sensor.desktop_${HOSTNAME}_memory_usage`,
+  battery: `sensor.desktop_${HOSTNAME}_battery`,
+  activeWindow: `sensor.desktop_${HOSTNAME}_active_window`,
+  webcam: `binary_sensor.desktop_${HOSTNAME}_webcam`,
+  microphone: `binary_sensor.desktop_${HOSTNAME}_microphone`,
+  userActive: `binary_sensor.desktop_${HOSTNAME}_active`,
 };
 
 let _periodicInterval = null;
 let _initialized = false;
 
-function getBaseUrl() { return (config.get('haBaseUrl') || '').replace(/\/$/, ''); }
-function getToken()   { return config.get('haToken') || ''; }
-function isReady()    { return !!(getBaseUrl() && getToken()); }
+function getBaseUrl() {
+  return (config.get('haBaseUrl') || '').replace(/\/$/, '');
+}
+function getToken() {
+  return config.get('haToken') || '';
+}
+function isReady() {
+  return !!(getBaseUrl() && getToken());
+}
 
 async function pushState(entityId, state, attributes = {}) {
   if (!isReady()) return;
-  try {
+
+  const doPush = async () => {
     const res = await fetch(`${getBaseUrl()}/api/states/${entityId}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${getToken()}`,
+        Authorization: `Bearer ${getToken()}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ state, attributes }),
     });
     if (!res.ok) {
       logger.warn(`Sensor push failed for ${entityId}: ${res.status}`);
+      return false;
+    }
+    return true;
+  };
+
+  try {
+    const ok = await doPush();
+    if (!ok) {
+      await new Promise((r) => setTimeout(r, 2000));
+      await doPush();
     }
   } catch (err) {
     logger.debug(`Sensor push error (${entityId}): ${err.message}`);
@@ -137,12 +157,17 @@ function init(intervalMs = 30_000) {
     return;
   }
 
+  _startSensors(intervalMs);
+}
+
+function _startSensors(intervalMs) {
   logger.info(`SensorPusher: initialising (push every ${intervalMs / 1000}s)`);
 
   // Initial push
   pushAllSensors();
 
   // Periodic push
+  if (_periodicInterval) clearInterval(_periodicInterval);
   _periodicInterval = setInterval(pushAllSensors, intervalMs);
 
   // Hook active window tracker — push on each change (Windows only)
@@ -152,7 +177,19 @@ function init(intervalMs = 30_000) {
     }, 3000);
   } else {
     // Push once on non-Windows to register the entity
-    getActiveWindow().then(pushActiveWindow).catch(() => {});
+    getActiveWindow()
+      .then(pushActiveWindow)
+      .catch(() => {});
+  }
+}
+
+function start(intervalMs = 30_000) {
+  if (!_initialized) {
+    init(intervalMs);
+    return;
+  }
+  if (isReady() && !_periodicInterval) {
+    _startSensors(intervalMs);
   }
 }
 
@@ -164,4 +201,4 @@ function stop() {
   _initialized = false;
 }
 
-module.exports = { init, stop, pushAllSensors, ENTITY_IDS };
+module.exports = { init, start, stop, pushAllSensors, ENTITY_IDS };

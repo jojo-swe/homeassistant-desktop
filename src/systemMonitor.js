@@ -33,17 +33,22 @@ async function getMediaDeviceStatus() {
       Write-Output "$webcam|$mic"
     `;
 
-    execFile('powershell', ['-NoProfile', '-NonInteractive', '-Command', psScript], { timeout: 5000 }, (err, stdout) => {
-      if (err) {
-        resolve({ webcam: false, microphone: false });
-        return;
+    execFile(
+      'powershell',
+      ['-NoProfile', '-NonInteractive', '-Command', psScript],
+      { timeout: 5000 },
+      (err, stdout) => {
+        if (err) {
+          resolve({ webcam: false, microphone: false });
+          return;
+        }
+        const [cam, mic] = stdout.trim().split('|');
+        resolve({
+          webcam: cam?.toLowerCase() === 'true',
+          microphone: mic?.toLowerCase() === 'true',
+        });
       }
-      const [cam, mic] = stdout.trim().split('|');
-      resolve({
-        webcam: cam?.toLowerCase() === 'true',
-        microphone: mic?.toLowerCase() === 'true',
-      });
-    });
+    );
   });
 }
 
@@ -57,10 +62,7 @@ class SystemMonitor {
     const idleTime = powerMonitor.getSystemIdleTime();
 
     // systeminformation for richer data
-    const [cpu, battery] = await Promise.all([
-      si.currentLoad().catch(() => null),
-      si.battery().catch(() => null),
-    ]);
+    const [cpu, battery] = await Promise.all([si.currentLoad().catch(() => null), si.battery().catch(() => null)]);
 
     const mediaStatus = await getMediaDeviceStatus();
 

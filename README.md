@@ -19,7 +19,7 @@ A modernized Desktop App (Windows / macOS / Linux) for [Home Assistant](https://
 
 ## 📥 Installation
 
-Download the latest version for your platform from the [Releases section](https://github.com/jojo-swe/homeassistant-desktop/releases/latest). 
+Download the latest version for your platform from the [Releases section](https://github.com/jojo-swe/homeassistant-desktop/releases/latest).
 
 Automatic updates are bundled and will seamlessly pull newer binaries from GitHub Releases automatically.
 
@@ -48,10 +48,32 @@ For a full list of changes in the latest releases, see the [CHANGELOG.md](./CHAN
 
 This project is a standalone continuation built to keep the Desktop companion alive.
 Huge credit to the original authors who laid the groundwork:
+
 - [iprodanovbg/homeassistant-desktop](https://github.com/iprodanovbg/homeassistant-desktop)
 - [mrvnklm/homeassistant-desktop](https://github.com/mrvnklm/homeassistant-desktop) (Original prototype)
 
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run the app
+npm start
+
+# Lint and format
+npm run lint
+npm run format
+
+# Run tests
+npm test
+npm run test:coverage
+
+# Build for current platform
+npm run build
+```
+
 Copyright 2022, [Ivan Prodanov](https://github.com/iprodanovbg)  
-Copyright 2020-2021, [Marvin Kelm](https://github.com/mrvnklm)  
+Copyright 2020-2021, [Marvin Kelm](https://github.com/mrvnklm)
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0).

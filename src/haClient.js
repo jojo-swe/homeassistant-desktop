@@ -1,7 +1,16 @@
 const config = require('../config');
 const logger = require('electron-log');
 
-const TOGGLEABLE_DOMAINS = new Set(['light', 'switch', 'input_boolean', 'fan', 'cover', 'lock', 'automation', 'script']);
+const TOGGLEABLE_DOMAINS = new Set([
+  'light',
+  'switch',
+  'input_boolean',
+  'fan',
+  'cover',
+  'lock',
+  'automation',
+  'script',
+]);
 
 function getSettings() {
   const baseUrl = (config.get('haBaseUrl') || '').replace(/\/$/, '');
@@ -25,7 +34,7 @@ async function fetchHA(path, method = 'GET', body = null) {
     const res = await fetch(`${baseUrl}/api/${path}`, {
       method,
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: body ? JSON.stringify(body) : undefined,
@@ -52,8 +61,8 @@ async function getToggleableEntities() {
   const states = await getStates();
   if (!states) return [];
   return states
-    .filter(s => TOGGLEABLE_DOMAINS.has(s.entity_id.split('.')[0]))
-    .map(s => ({
+    .filter((s) => TOGGLEABLE_DOMAINS.has(s.entity_id.split('.')[0]))
+    .map((s) => ({
       entity_id: s.entity_id,
       name: s.attributes?.friendly_name || s.entity_id,
       state: s.state,
@@ -65,8 +74,7 @@ async function getToggleableEntities() {
 /** Toggles a given entity */
 async function toggle(entityId) {
   const domain = entityId.split('.')[0];
-  const service = domain === 'cover' ? 'toggle' : 'toggle';
-  const result = await fetchHA(`services/${domain}/${service}`, 'POST', { entity_id: entityId });
+  const result = await fetchHA(`services/${domain}/toggle`, 'POST', { entity_id: entityId });
   if (result !== null) {
     logger.info(`Toggled: ${entityId}`);
   }

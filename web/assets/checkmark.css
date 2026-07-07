@@ -31,7 +31,7 @@
 
 .success-checkmark .check-icon::before,
 .success-checkmark .check-icon::after {
-  content: "";
+  content: '';
   height: 100px;
   position: absolute;
   background: #ffffff;

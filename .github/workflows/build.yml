@@ -3,8 +3,11 @@ name: Build/release
 on:
   push:
     tags:
-      - "*"
+      - '*'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -32,7 +35,7 @@ jobs:
           # (No need to define this secret in the repo settings)
           github_token: ${{ secrets.github_token }}
 
-          args: "--x64 --arm64"
+          args: '--x64 --arm64'
 
           mac_certs: ${{ secrets.mac_certs }}
           mac_certs_password: ${{ secrets.mac_certs_password }}
@@ -51,7 +54,7 @@ jobs:
           # GitHub token, automatically provided to the action
           github_token: ${{ secrets.github_token }}
 
-          args: "--ia32 --x64 --arm64"
+          args: '--ia32 --x64 --arm64'
 
           # If the commit is tagged with a version (e.g. "v1.0.0"),
           # release the app after building
@@ -66,7 +69,7 @@ jobs:
           # (No need to define this secret in the repo settings)
           github_token: ${{ secrets.github_token }}
 
-          args: "--linux appimage --x64 --arm64"
+          args: '--linux appimage --x64 --arm64'
 
           # If the commit is tagged with a version (e.g. "v1.0.0"),
           # release the app after building

@@ -12,9 +12,20 @@ const { getActiveWindow } = require('./activeWindow');
 const haClient = require('./haClient');
 const commandReceiver = require('./commandReceiver');
 const shortcutManager = require('./shortcutManager');
+const sensorPusher = require('./sensorPusher');
 
-function registerAll({ getMainWindow, showWindow, openSettingsWindow, getCachedEntities, setCachedEntities, reinitMainWindow, addInstance, currentInstance, bonjour, forceQuit }) {
-
+function registerAll({
+  getMainWindow,
+  showWindow,
+  openSettingsWindow,
+  getCachedEntities,
+  setCachedEntities,
+  reinitMainWindow,
+  addInstance,
+  currentInstance,
+  bonjour,
+  forceQuit,
+}) {
   // ── Renderer → Main (one-way) ─────────────────────────────────────────────
 
   ipcMain.on('get-instances', (event) => {
@@ -75,7 +86,7 @@ function registerAll({ getMainWindow, showWindow, openSettingsWindow, getCachedE
   ipcMain.on('settings-open', (event) => {
     event.reply('settings-loaded', {
       haBaseUrl: config.get('haBaseUrl'),
-      haToken:   config.get('haToken'),
+      haToken: config.get('haToken'),
       pinnedEntities: config.get('pinnedEntities') || [],
     });
     const entities = getCachedEntities();
@@ -84,10 +95,21 @@ function registerAll({ getMainWindow, showWindow, openSettingsWindow, getCachedE
 
   ipcMain.handle('save-settings', async (_event, { haBaseUrl, haToken }) => {
     try {
-      config.set('haBaseUrl', haBaseUrl.trim());
-      config.set('haToken', haToken.trim());
+      const trimmedUrl = haBaseUrl.trim();
+      const trimmedToken = haToken.trim();
+      if (!trimmedUrl || !trimmedToken) {
+        return { ok: false, error: 'URL and token are required.' };
+      }
+      try {
+        new URL(trimmedUrl);
+      } catch {
+        return { ok: false, error: 'Invalid URL format.' };
+      }
+      config.set('haBaseUrl', trimmedUrl.replace(/\/$/, ''));
+      config.set('haToken', trimmedToken);
       const entities = await haClient.getToggleableEntities();
       setCachedEntities(entities);
+      sensorPusher.start();
       return { ok: true, entities };
     } catch (err) {
       return { ok: false, error: err.message };

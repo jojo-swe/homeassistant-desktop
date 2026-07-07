@@ -1,171 +1,283 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-  <title>Home Assistant</title>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="assets/style.css" rel="stylesheet" />
-  <link href="assets/checkmark.css" rel="stylesheet" />
-  <script>
-
-    function showInstance(url) {
-      if (url === '') {
-        return;
-      }
-
-      document.getElementById('availableInstancesContainer').style.display = 'block';
-      const button = document.createElement('button');
-      button.onclick = () => addInstance(url);
-      button.classList.add('pure-material-button-contained');
-      button.textContent = url;
-      document.getElementById('availableInstances').append(button);
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-      setTimeout(() => document.getElementById('url').focus(), 300);
-    });
-
-    window.api.send('get-instances');
-    window.api.on('get-instances', (result) => {
-      let instances = result;
-
-      window.api.on('bonjour-instance', (instance) => {
-        if (instance.internal_url && instances.indexOf(instance.internal_url) === -1) {
-          showInstance(instance.internal_url);
-        }
-
-        if (instance.external_url && instances.indexOf(instance.external_url) === -1) {
-          showInstance(instance.external_url);
-        }
-      });
-      window.api.send('start-bonjour');
-    });
-
-    function addInstance(url) {
-      const urlField = document.getElementById('url');
-      urlField.value = url;
-      checkUrl();
-    }
-
-    function saveInstance() {
-      const urlField = document.getElementById('url');
-      document.getElementById('check-wrapper').style.display = 'block';
-      document.getElementById('url-wrapper').style.display = 'none';
-      showCheckmark = true;
-      window.api.send('ha-instance', urlField.value);
-    }
-
-    window.api.send('ha-instance');
-
-    let showCheckmark = false;
-
-    window.api.on('ha-instance', function (url) {
-      if (showCheckmark) {
-        document
-          .getElementById('check-wrapper')
-          .addEventListener(
-            'animationend',
-            () => (window.location.href = url)
-          );
-      } else {
-        window.location.href = url;
-      }
-    });
-
-    function isValidUrl(string) {
-      try {
-        new URL(string);
-      } catch (_) {
-        return false;
-      }
-
-      return true;
-    }
-
-    function checkUrl() {
-      const urlField = document.getElementById('url');
-      const submitBtn = document.getElementById('submit');
-      submitBtn.disabled = true;
-      let url = urlField.value;
-      urlField.classList.remove('is-invalid', 'is-valid');
-
-      if (!url.startsWith('http') || !isValidUrl(url)) {
-        urlField.classList.add('is-invalid');
-        return;
-      }
-
-      url = new URL(url);
-
-      if (url.pathname.length > 1 && !url.pathname.startsWith('/lovelace') && !url.pathname.startsWith('/energy')) {
-        console.log(url.pathname, !url.pathname.startsWith('/lovelace'));
-        urlField.classList.add('is-invalid');
-        return;
-      }
-
-      urlField.classList.add('is-valid');
-
-      fetch(`${url.origin}/auth/providers`)
-        .then(response => response.text())
-        .then(data => {
-          if (!data.includes('homeassistant')) {
-            return;
-          }
-
-          submitBtn.disabled = false;
-        }).catch((_) => {
-      });
-    }
-  </script>
-</head>
-
-<body>
-<div class="container">
-  <div class="content">
+  <head>
+    <title>Home Assistant</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link href="assets/theme.css" rel="stylesheet" />
+    <link href="assets/checkmark.css" rel="stylesheet" />
     <style>
-      .logo-img { height: 52px; vertical-align: middle; margin-right: 10px; }
-      .margin-top-30 { margin-top: 30px; }
-      .d-none { display: none; }
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        padding: 20px;
+        gap: 20px;
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .header img {
+        width: 32px;
+        height: 32px;
+      }
+      .header h1 {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .subtitle {
+        font-size: 12px;
+        color: var(--text-muted);
+        text-align: center;
+        max-width: 320px;
+      }
+      .url-form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 320px;
+      }
+      .url-form input {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 14px;
+        padding: 12px 14px;
+        outline: none;
+        transition: border-color 0.2s;
+        width: 100%;
+      }
+      .url-form input:focus {
+        border-color: var(--ha-blue);
+      }
+      .url-form input.is-invalid {
+        border-color: var(--danger);
+      }
+      .url-form input.is-valid {
+        border-color: var(--success);
+      }
+      .feedback {
+        font-size: 12px;
+        min-height: 16px;
+        color: var(--danger);
+      }
+      .feedback.valid {
+        color: var(--success);
+      }
+      .btn-primary {
+        width: 100%;
+      }
+      .discovery-section {
+        width: 320px;
+        display: none;
+      }
+      .discovery-section.visible {
+        display: block;
+      }
+      .discovery-title {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+      .instance-btn {
+        display: block;
+        width: 100%;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-family: inherit;
+        font-size: 13px;
+        padding: 10px 14px;
+        cursor: pointer;
+        margin-bottom: 6px;
+        transition: border-color 0.15s;
+        text-align: left;
+      }
+      .instance-btn:hover {
+        border-color: var(--ha-blue);
+      }
+      .check-wrapper {
+        display: none;
+        text-align: center;
+      }
+      .check-wrapper.visible {
+        display: block;
+      }
+      .check-wrapper p {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 12px;
+      }
     </style>
-    <div class="center header">
-      <img src="assets/favicon.png" class="logo-img" alt="Home Assistant Logo"/> Home Assistant
-    </div>
-    <div id="availableInstancesContainer" class="d-none">
-      <div class="center">
-        <p>Available Instances: </p>
+    <script>
+      function showInstance(url) {
+        if (url === '') return;
+        document.getElementById('discoverySection').classList.add('visible');
+        const button = document.createElement('button');
+        button.onclick = () => addInstance(url);
+        button.classList.add('instance-btn');
+        button.textContent = url;
+        document.getElementById('availableInstances').append(button);
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(() => document.getElementById('url').focus(), 300);
+      });
+
+      window.api.send('get-instances');
+      window.api.on('get-instances', (result) => {
+        let instances = result;
+
+        window.api.on('bonjour-instance', (instance) => {
+          if (instance.internal_url && instances.indexOf(instance.internal_url) === -1) {
+            showInstance(instance.internal_url);
+          }
+          if (instance.external_url && instances.indexOf(instance.external_url) === -1) {
+            showInstance(instance.external_url);
+          }
+        });
+        window.api.send('start-bonjour');
+      });
+
+      function addInstance(url) {
+        document.getElementById('url').value = url;
+        checkUrl();
+      }
+
+      function saveInstance() {
+        const urlField = document.getElementById('url');
+        const submitBtn = document.getElementById('submit');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Connecting…';
+        document.getElementById('urlForm').style.display = 'none';
+        document.getElementById('checkWrapper').classList.add('visible');
+        window.api.send('ha-instance', urlField.value);
+      }
+
+      window.api.send('ha-instance');
+
+      let showCheckmark = false;
+
+      window.api.on('ha-instance', function (url) {
+        if (showCheckmark) {
+          document.getElementById('check-wrapper').addEventListener('animationend', () => {
+            window.location.href = url;
+          });
+        } else {
+          window.location.href = url;
+        }
+      });
+
+      function isValidUrl(string) {
+        try {
+          new URL(string);
+        } catch (_) {
+          return false;
+        }
+        return true;
+      }
+
+      function checkUrl() {
+        const urlField = document.getElementById('url');
+        const submitBtn = document.getElementById('submit');
+        const feedback = document.getElementById('feedback');
+        submitBtn.disabled = true;
+        let url = urlField.value;
+        urlField.classList.remove('is-invalid', 'is-valid');
+        feedback.textContent = '';
+        feedback.classList.remove('valid');
+
+        if (!url.startsWith('http') || !isValidUrl(url)) {
+          urlField.classList.add('is-invalid');
+          feedback.textContent = 'Please provide a valid URL starting with http:// or https://';
+          return;
+        }
+
+        url = new URL(url);
+
+        if (url.pathname.length > 1 && !url.pathname.startsWith('/lovelace') && !url.pathname.startsWith('/energy')) {
+          urlField.classList.add('is-invalid');
+          feedback.textContent = 'URL path should be /lovelace or /energy';
+          return;
+        }
+
+        urlField.classList.add('is-valid');
+        feedback.textContent = 'Checking connection…';
+        feedback.classList.add('valid');
+
+        fetch(`${url.origin}/auth/providers`)
+          .then((response) => response.text())
+          .then((data) => {
+            if (!data.includes('homeassistant')) {
+              urlField.classList.remove('is-valid');
+              urlField.classList.add('is-invalid');
+              feedback.textContent = 'No Home Assistant instance found at this URL';
+              feedback.classList.remove('valid');
+              return;
+            }
+            feedback.textContent = '✓ Home Assistant detected!';
+            submitBtn.disabled = false;
+          })
+          .catch(() => {
+            urlField.classList.remove('is-valid');
+            urlField.classList.add('is-invalid');
+            feedback.textContent = 'Could not reach the URL — check your connection';
+            feedback.classList.remove('valid');
+          });
+      }
+    </script>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="header">
+        <img src="assets/favicon.png" alt="Home Assistant Logo" />
+        <h1>Home Assistant</h1>
       </div>
-      <div class="center">
-        <div id="availableInstances">
+
+      <p class="subtitle">Enter your Home Assistant URL below, or pick a discovered instance.</p>
+
+      <div id="discoverySection" class="discovery-section">
+        <div class="discovery-title">Discovered Instances</div>
+        <div id="availableInstances"></div>
+      </div>
+
+      <div id="checkWrapper" class="check-wrapper">
+        <div id="check-wrapper" class="success-checkmark">
+          <div class="check-icon center">
+            <span class="icon-line line-tip"></span>
+            <span class="icon-line line-long"></span>
+            <div class="icon-circle"></div>
+            <div class="icon-fix"></div>
+          </div>
+          <p>Your URL is checked, and you will be forwarded to Home Assistant automatically.</p>
         </div>
       </div>
-    </div>
-    <div class="center margin-top-30">
 
-    </div>
-    <div class="center">
-      <div id="check-wrapper" class="success-checkmark">
-        <div class="check-icon center">
-          <span class="icon-line line-tip"></span>
-          <span class="icon-line line-long"></span>
-          <div class="icon-circle"></div>
-          <div class="icon-fix"></div>
-        </div>
-        <p>
-          <small class="grey">Your URL is checked, and you will be forwarded to Home Assistant automatically.</small>
-        </p>
-      </div>
-
-      <div id="url-wrapper" class="group">
-        <input type="url" required="required" id="url" placeholder="e.g. http://homeassistant.local:8123" onkeyup="checkUrl()" />
-        <span class="highlight"></span>
-        <span class="bar"></span>
-        <label for="url">Home Assistant URL</label>
-        <div class="invalid-feedback">Please provide a valid url.</div>
-        <button class="pure-material-button-contained" id="submit" onclick="saveInstance()" disabled>Submit</button>
+      <div id="urlForm" class="url-form">
+        <input
+          type="url"
+          required="required"
+          id="url"
+          placeholder="http://homeassistant.local:8123"
+          onkeyup="checkUrl()"
+        />
+        <div id="feedback" class="feedback"></div>
+        <button class="btn btn-primary" id="submit" onclick="saveInstance()" disabled>Connect</button>
       </div>
     </div>
-  </div>
-</div>
-</body>
-
+  </body>
 </html>

@@ -4,7 +4,7 @@
     "type": "git",
     "url": "https://github.com/jojo-swe/homeassistant-desktop"
   },
-  "version": "1.5.4",
+  "version": "1.6.0",
   "description": "Desktop App (Windows / macOS / Linux) for Home Assistant built with Electron",
   "author": "Ivan Prodanov",
   "license": "Apache-2.0",
@@ -18,7 +18,12 @@
     "build-local-linux-arm": "electron-builder build --linux rpm --arm64 --publish never",
     "build-local-win": "electron-builder build --win --x64 --publish never",
     "build-local-win-arm": "electron-builder build --win --arm64 --publish never",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint . --fix",
+    "lint:check": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "bonjour-service": "^1.0.14",
@@ -29,8 +34,14 @@
     "systeminformation": "^5.31.5"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "electron": "^32.0.0",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^9.1.2",
+    "globals": "^17.7.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.9.4"
   },
   "engines": {
     "node": ">= 20"
@@ -39,6 +50,11 @@
     "appId": "com.electron.homeassistant-desktop",
     "artifactName": "${productName}-v${version}-${os}-${arch}.${ext}",
     "productName": "Home Assistant Desktop",
+    "publish": {
+      "provider": "github",
+      "owner": "jojo-swe",
+      "repo": "homeassistant-desktop"
+    },
     "mac": {
       "category": "public.app-category.productivity",
       "target": [

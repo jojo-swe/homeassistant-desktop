@@ -23,17 +23,22 @@ function getActiveWindow() {
       return;
     }
 
-    execFile('powershell', ['-NoProfile', '-NonInteractive', '-Command', PS_SCRIPT], { timeout: 5000 }, (err, stdout) => {
-      if (err) {
-        resolve({ process_name: null, window_title: null });
-        return;
+    execFile(
+      'powershell',
+      ['-NoProfile', '-NonInteractive', '-Command', PS_SCRIPT],
+      { timeout: 5000 },
+      (err, stdout) => {
+        if (err) {
+          resolve({ process_name: null, window_title: null });
+          return;
+        }
+        const parts = stdout.trim().split('|');
+        resolve({
+          process_name: parts[0] || null,
+          window_title: parts[1] || null,
+        });
       }
-      const parts = stdout.trim().split('|');
-      resolve({
-        process_name: parts[0] || null,
-        window_title: parts[1] || null,
-      });
-    });
+    );
   });
 }
 
@@ -47,13 +52,14 @@ function startTracking(onChange, intervalMs = 2000) {
 
   pollInterval = setInterval(async () => {
     const current = await getActiveWindow();
-    if (
-      current.window_title !== lastWindowTitle ||
-      current.process_name !== lastWindowProcess
-    ) {
+    if (current.window_title !== lastWindowTitle || current.process_name !== lastWindowProcess) {
       lastWindowTitle = current.window_title;
       lastWindowProcess = current.process_name;
-      try { onChange(current); } catch (e) { logger.error('activeWindow onChange error:', e); }
+      try {
+        onChange(current);
+      } catch (e) {
+        logger.error('activeWindow onChange error:', e);
+      }
     }
   }, intervalMs);
 

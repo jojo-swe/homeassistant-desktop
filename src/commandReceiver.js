@@ -37,9 +37,16 @@ const HANDLERS = {
     logger.info('Command: sleep');
     if (process.platform === 'win32') {
       // Safe PowerShell sleep — no DllImport, no Add-Type
-      execFile('powershell', ['-NoProfile', '-NonInteractive', '-Command',
-        'Add-type -assembly "System.Windows.Forms" | Out-Null; [System.Windows.Forms.Application]::SetSuspendState(\'Suspend\', $false, $false)'
-      ], { timeout: 5000 });
+      execFile(
+        'powershell',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          'Add-type -assembly "System.Windows.Forms" | Out-Null; [System.Windows.Forms.Application]::SetSuspendState(\'Suspend\', $false, $false)',
+        ],
+        { timeout: 5000 }
+      );
     } else if (process.platform === 'darwin') {
       exec('pmset sleepnow');
     } else {
@@ -47,21 +54,43 @@ const HANDLERS = {
     }
   },
 
-  mute: (_) => {
+  mute: () => {
     logger.info('Command: mute');
     if (process.platform === 'win32') {
-      execFile('powershell', ['-NoProfile', '-NonInteractive', '-Command',
-        '$obj = New-Object -ComObject WScript.Shell; $obj.SendKeys([char]173)'
-      ], { timeout: 3000 });
+      execFile(
+        'powershell',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          '$obj = New-Object -ComObject WScript.Shell; $obj.SendKeys([char]173)',
+        ],
+        { timeout: 3000 }
+      );
+    } else if (process.platform === 'darwin') {
+      exec('osascript -e "set volume with output muted"');
+    } else {
+      exec('amixer -D pulse sset Master mute');
     }
   },
 
-  unmute: (_) => {
+  unmute: () => {
     logger.info('Command: unmute');
     if (process.platform === 'win32') {
-      execFile('powershell', ['-NoProfile', '-NonInteractive', '-Command',
-        '$obj = New-Object -ComObject WScript.Shell; $obj.SendKeys([char]173)'
-      ], { timeout: 3000 });
+      execFile(
+        'powershell',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          '$obj = New-Object -ComObject WScript.Shell; $obj.SendKeys([char]173)',
+        ],
+        { timeout: 3000 }
+      );
+    } else if (process.platform === 'darwin') {
+      exec('osascript -e "set volume without output muted"');
+    } else {
+      exec('amixer -D pulse sset Master unmute');
     }
   },
 

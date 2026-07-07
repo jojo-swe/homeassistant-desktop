@@ -21,20 +21,22 @@ let _useAutoUpdater;
 let _forceQuit;
 
 function init(deps) {
-  _getMainWindow       = deps.getMainWindow;
-  _showWindow          = deps.showWindow;
-  _toggleFullScreen    = deps.toggleFullScreen;
-  _openSettingsWindow  = deps.openSettingsWindow;
-  _getCachedEntities   = deps.getCachedEntities;
-  _refreshEntityCache  = deps.refreshEntityCache;
+  _getMainWindow = deps.getMainWindow;
+  _showWindow = deps.showWindow;
+  _toggleFullScreen = deps.toggleFullScreen;
+  _openSettingsWindow = deps.openSettingsWindow;
+  _getCachedEntities = deps.getCachedEntities;
+  _refreshEntityCache = deps.refreshEntityCache;
   _getAutostartEnabled = deps.getAutostartEnabled;
   _getUpdateCheckerInterval = deps.getUpdateCheckerInterval;
   _clearUpdateInterval = deps.clearUpdateInterval;
-  _useAutoUpdater      = deps.useAutoUpdater;
-  _forceQuit           = deps.forceQuit;
+  _useAutoUpdater = deps.useAutoUpdater;
+  _forceQuit = deps.forceQuit;
 }
 
-function getTray() { return tray; }
+function getTray() {
+  return tray;
+}
 
 function changePosition() {
   const mainWindow = _getMainWindow();
@@ -49,7 +51,11 @@ function changePosition() {
       Positioner.position(mainWindow, trayBounds, alignment);
     } else {
       const { y } = Positioner.calculate(mainWindow.getBounds(), trayBounds, alignment);
-      mainWindow.setPosition(displayWorkArea.width - windowBounds.width + displayWorkArea.x, y + (taskBarPosition === 'bottom' && displayWorkArea.y), false);
+      mainWindow.setPosition(
+        displayWorkArea.width - windowBounds.width + displayWorkArea.x,
+        y + (taskBarPosition === 'bottom' && displayWorkArea.y),
+        false
+      );
     }
   } else {
     const alignment = { x: taskBarPosition, y: 'center' };
@@ -70,8 +76,10 @@ function setWindowFocusTimer() {
     const windowPosition = mainWindow.getPosition();
     const windowSize = mainWindow.getSize();
     const inWindow =
-      mousePos.x >= windowPosition[0] && mousePos.x <= windowPosition[0] + windowSize[0] &&
-      mousePos.y >= windowPosition[1] && mousePos.y <= windowPosition[1] + windowSize[1];
+      mousePos.x >= windowPosition[0] &&
+      mousePos.x <= windowPosition[0] + windowSize[0] &&
+      mousePos.y >= windowPosition[1] &&
+      mousePos.y <= windowPosition[1] + windowSize[1];
 
     if (!inWindow) {
       mainWindow.hide();
@@ -130,7 +138,7 @@ function getMenu() {
         enabled: allInstances.length > 1,
         checked: config.get('automaticSwitching'),
         click: () => config.set('automaticSwitching', !config.get('automaticSwitching')),
-      },
+      }
     );
   } else {
     instancesMenu.push({ label: 'Not Connected...', enabled: false });
@@ -139,20 +147,21 @@ function getMenu() {
   // ── Quick Actions ──────────────────────────────────────────────
   const pinned = config.get('pinnedEntities') || [];
   const cachedEntities = _getCachedEntities();
-  const quickActions = pinned.length > 0
-    ? pinned.map(entityId => {
-        const entity = cachedEntities.find(e => e.entity_id === entityId);
-        const name = entity?.name || entityId;
-        const isOn = entity?.state === 'on';
-        return {
-          label: `${isOn ? '●' : '○'} ${name}`,
-          click: async () => {
-            await haClient.toggle(entityId);
-            setTimeout(_refreshEntityCache, 800);
-          },
-        };
-      })
-    : [{ label: 'No entities pinned — open Settings', enabled: false }];
+  const quickActions =
+    pinned.length > 0
+      ? pinned.map((entityId) => {
+          const entity = cachedEntities.find((e) => e.entity_id === entityId);
+          const name = entity?.name || entityId;
+          const isOn = entity?.state === 'on';
+          return {
+            label: `${isOn ? '●' : '○'} ${name}`,
+            click: async () => {
+              await haClient.toggle(entityId);
+              setTimeout(_refreshEntityCache, 800);
+            },
+          };
+        })
+      : [{ label: 'No entities pinned — open Settings', enabled: false }];
 
   const quickActionsMenu = [
     { type: 'separator' },
@@ -166,11 +175,16 @@ function getMenu() {
     },
   ];
 
+  const haConfigured = config.has('haBaseUrl') && config.get('haBaseUrl');
+  const statusLabel = haConfigured ? '🟢 Connected' : '🔴 Not Connected';
+
   return Menu.buildFromTemplate([
+    { label: statusLabel, enabled: false },
+    { type: 'separator' },
     {
       label: 'Show/Hide Window',
       visible: process.platform === 'linux',
-      click: () => mainWindow.isVisible() ? mainWindow.hide() : _showWindow(),
+      click: () => (mainWindow.isVisible() ? mainWindow.hide() : _showWindow()),
     },
     { visible: process.platform === 'linux', type: 'separator' },
     ...instancesMenu,
@@ -250,41 +264,55 @@ function getMenu() {
     },
     { type: 'separator' },
     { label: '⚙ Settings', click: () => _openSettingsWindow() },
+    {
+      label: '↻ Refresh Entities',
+      click: async () => {
+        await _refreshEntityCache();
+      },
+    },
     { type: 'separator' },
     {
       label: 'Restart Application',
-      click: () => { app.relaunch(); app.exit(); },
+      click: () => {
+        app.relaunch();
+        app.exit();
+      },
     },
     {
       label: '⚠️ Reset Application',
       click: () => {
         const { dialog } = require('electron');
-        dialog.showMessageBox({
-          message: 'Are you sure you want to reset Home Assistant Desktop?',
-          buttons: ['Reset Everything!', 'Reset Windows', 'Cancel'],
-        }).then(async (res) => {
-          if (res.response !== 2) {
-            if (res.response === 0) {
-              config.clear();
-              await mainWindow.webContents.session.clearCache();
-              await mainWindow.webContents.session.clearStorageData();
-            } else {
-              config.delete('windowSizeDetached');
-              config.delete('windowSize');
-              config.delete('windowPosition');
-              config.delete('fullScreen');
-              config.delete('detachedMode');
+        dialog
+          .showMessageBox({
+            message: 'Are you sure you want to reset Home Assistant Desktop?',
+            buttons: ['Reset Everything!', 'Reset Windows', 'Cancel'],
+          })
+          .then(async (res) => {
+            if (res.response !== 2) {
+              if (res.response === 0) {
+                config.clear();
+                await mainWindow.webContents.session.clearCache();
+                await mainWindow.webContents.session.clearStorageData();
+              } else {
+                config.delete('windowSizeDetached');
+                config.delete('windowSize');
+                config.delete('windowPosition');
+                config.delete('fullScreen');
+                config.delete('detachedMode');
+              }
+              app.relaunch();
+              app.exit();
             }
-            app.relaunch();
-            app.exit();
-          }
-        });
+          });
       },
     },
     { type: 'separator' },
     {
       label: 'Quit',
-      click: () => { _forceQuit(); app.quit(); },
+      click: () => {
+        _forceQuit();
+        app.quit();
+      },
     },
   ]);
 }
@@ -295,9 +323,7 @@ function createTray(deps) {
   init(deps);
 
   logger.info('Initialized Tray menu');
-  tray = new Tray(
-    ['win32', 'linux'].includes(process.platform) ? ICON_WIN : ICON_MAC,
-  );
+  tray = new Tray(['win32', 'linux'].includes(process.platform) ? ICON_WIN : ICON_MAC);
 
   tray.on('click', () => {
     const mainWindow = _getMainWindow();
@@ -324,8 +350,10 @@ function createTray(deps) {
       const mousePos = screen.getCursorScreenPoint();
       const trayBounds = tray.getBounds();
       const inTray =
-        mousePos.x >= trayBounds.x && mousePos.x <= trayBounds.x + trayBounds.width &&
-        mousePos.y >= trayBounds.y && mousePos.y <= trayBounds.y + trayBounds.height;
+        mousePos.x >= trayBounds.x &&
+        mousePos.x <= trayBounds.x + trayBounds.width &&
+        mousePos.y >= trayBounds.y &&
+        mousePos.y <= trayBounds.y + trayBounds.height;
       if (!inTray) setWindowFocusTimer();
     }, 100);
   });

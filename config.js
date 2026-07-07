@@ -14,5 +14,5 @@ module.exports = new Store({
     haToken: '',
     pinnedEntities: [],
     shortcuts: [],
-  }
+  },
 });

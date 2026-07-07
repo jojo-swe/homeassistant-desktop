@@ -3,6 +3,7 @@ const Positioner = require('electron-traywindow-positioner');
 const logger = require('electron-log');
 const fs = require('fs');
 const config = require('../config');
+const { currentInstance } = require('./instances');
 
 const INDEX_FILE = `file://${__dirname}/../web/index.html`;
 const ERROR_FILE = `file://${__dirname}/../web/error.html`;
@@ -52,7 +53,10 @@ async function createMainWindow(show = false) {
     },
   });
 
-  await mainWindow.loadURL(INDEX_FILE);
+  await mainWindow.loadURL(INDEX_FILE).catch(async (err) => {
+    logger.error('Failed to load index page:', err.message);
+    await mainWindow.loadURL(ERROR_FILE).catch(() => {});
+  });
 
   // Open external links in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -62,7 +66,9 @@ async function createMainWindow(show = false) {
 
   // Hide scrollbar and inject HA notification bridge for HA pages
   mainWindow.webContents.on('did-finish-load', async () => {
-    await mainWindow.webContents.insertCSS('::-webkit-scrollbar { display: none; } body { -webkit-user-select: none; }');
+    await mainWindow.webContents.insertCSS(
+      '::-webkit-scrollbar { display: none; } body { -webkit-user-select: none; }'
+    );
 
     if (config.get('detachedMode') && process.platform === 'darwin') {
       await mainWindow.webContents.insertCSS('body { -webkit-app-region: drag; }');
@@ -82,16 +88,16 @@ async function createMainWindow(show = false) {
 
   // Window size / position persistence
   if (config.get('detachedMode')) {
-    if (config.has('windowPosition')) {
+    if (config.has('windowSizeDetached')) {
       mainWindow.setSize(...config.get('windowSizeDetached'));
     } else {
-      config.set('windowPosition', mainWindow.getPosition());
+      config.set('windowSizeDetached', mainWindow.getSize());
     }
 
-    if (config.has('windowSizeDetached')) {
+    if (config.has('windowPosition')) {
       mainWindow.setPosition(...config.get('windowPosition'));
     } else {
-      config.set('windowSizeDetached', mainWindow.getSize());
+      config.set('windowPosition', mainWindow.getPosition());
     }
   } else if (config.has('windowSize')) {
     mainWindow.setSize(...config.get('windowSize'));
@@ -201,13 +207,6 @@ async function showError(isError) {
   if (isError && currentInstance() && !mainWindow.webContents.getURL().includes('error.html')) {
     await mainWindow.loadURL(ERROR_FILE);
   }
-}
-
-// Mirrors the config helpers — kept here to avoid circular deps
-function currentInstance(url = null) {
-  if (url) config.set('currentInstance', config.get('allInstances').indexOf(url));
-  if (config.has('currentInstance')) return config.get('allInstances')[config.get('currentInstance')];
-  return false;
 }
 
 module.exports = {

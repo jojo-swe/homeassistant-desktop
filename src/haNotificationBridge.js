@@ -45,9 +45,7 @@
     if (attempts > MAX_ATTEMPTS) return;
 
     if (window.hassConnection) {
-      window.hassConnection
-        .then((conn) => subscribe(conn))
-        .catch(() => {});
+      window.hassConnection.then((conn) => subscribe(conn)).catch(() => {});
     } else {
       setTimeout(pollForConnection, POLL_INTERVAL);
     }

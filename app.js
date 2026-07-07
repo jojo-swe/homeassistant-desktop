@@ -20,12 +20,13 @@ const config = require('./config');
 
 // ── src modules ──────────────────────────────────────────────────────────────
 const windowManager = require('./src/window');
-const { createTray, getTray, getMenu } = require('./src/tray');
+const { createTray, getTray, getMenu, changePosition } = require('./src/tray');
 const { useAutoUpdater, clearUpdateInterval, getUpdateCheckerInterval } = require('./src/updater');
 const { registerAll } = require('./src/ipc');
 const haClient = require('./src/haClient');
 const sensorPusher = require('./src/sensorPusher');
 const shortcutManager = require('./src/shortcutManager');
+const { currentInstance, addInstance } = require('./src/instances');
 
 logger.catchErrors();
 logger.info(`${app.getName()} started`);
@@ -44,22 +45,6 @@ const SETTINGS_FILE = `file://${__dirname}/web/settings.html`;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function currentInstance(url = null) {
-  if (url) config.set('currentInstance', config.get('allInstances').indexOf(url));
-  if (config.has('currentInstance')) return config.get('allInstances')[config.get('currentInstance')];
-  return false;
-}
-
-function addInstance(url) {
-  if (!config.has('allInstances')) config.set('allInstances', []);
-  let instances = config.get('allInstances');
-  if (instances.find(e => e === url)) { currentInstance(url); return; }
-  if (!instances.length) config.set('disableHover', false);
-  instances.push(url);
-  config.set('allInstances', instances);
-  currentInstance(url);
-}
-
 function checkAutoStart() {
   autostartEnabled = app.getLoginItemSettings().openAtLogin;
 }
@@ -75,16 +60,19 @@ async function refreshEntityCache() {
 }
 
 function openSettingsWindow() {
-  if (settingsWindow) { settingsWindow.focus(); return; }
+  if (settingsWindow) {
+    settingsWindow.focus();
+    return;
+  }
 
   settingsWindow = new BrowserWindow({
-    width: 420,
-    height: 600,
+    width: 460,
+    height: 640,
     minWidth: 420,
     minHeight: 500,
     title: 'Home Assistant Desktop — Settings',
     autoHideMenuBar: true,
-    resizable: false,
+    resizable: true,
     skipTaskbar: false,
     webPreferences: {
       nodeIntegration: false,
@@ -94,14 +82,22 @@ function openSettingsWindow() {
   });
 
   settingsWindow.loadURL(SETTINGS_FILE);
-  settingsWindow.on('closed', () => { settingsWindow = null; });
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
+  });
 }
 
 function availabilityCheck() {
   const instance = currentInstance();
   if (!instance) return;
 
-  const url = new URL(instance);
+  let url;
+  try {
+    url = new URL(instance);
+  } catch {
+    logger.error(`Invalid stored instance URL: "${instance}"`);
+    return;
+  }
   const request = net.request(`${url.origin}/auth/providers`);
 
   request.on('response', async (response) => {
@@ -125,21 +121,28 @@ function availabilityCheck() {
 
 function checkForAvailableInstance() {
   const instances = config.get('allInstances');
-  if (!instances?.length > 1) return;
+  if (!instances || instances.length <= 1) return;
 
   bonjour.find({ type: 'home-assistant' }, (instance) => {
-    if (instance.txt.internal_url && instances.indexOf(instance.txt.internal_url) !== -1) return currentInstance(instance.txt.internal_url);
-    if (instance.txt.external_url && instances.indexOf(instance.txt.external_url) !== -1) return currentInstance(instance.txt.external_url);
+    if (instance.txt.internal_url && instances.indexOf(instance.txt.internal_url) !== -1)
+      return currentInstance(instance.txt.internal_url);
+    if (instance.txt.external_url && instances.indexOf(instance.txt.external_url) !== -1)
+      return currentInstance(instance.txt.external_url);
   });
 
-  for (let instance of instances.filter(e => e !== currentInstance())) {
+  for (let instance of instances.filter((e) => e !== currentInstance())) {
     const url = new URL(instance);
     const request = net.request(`${url.origin}/auth/providers`);
     let found;
-    request.on('response', (response) => { if (response.statusCode === 200) found = instance; });
+    request.on('response', (response) => {
+      if (response.statusCode === 200) found = instance;
+    });
     request.on('error', () => {});
     request.end();
-    if (found) { currentInstance(found); break; }
+    if (found) {
+      currentInstance(found);
+      break;
+    }
   }
 }
 
@@ -147,38 +150,42 @@ function checkForAvailableInstance() {
 
 // Window module needs runtime callbacks to avoid circular dependency
 windowManager.init({
-  showWindow:      () => windowManager.showWindow(),
-  changePosition:  () => trayModule.changePosition(),
+  showWindow: () => windowManager.showWindow(),
+  changePosition: () => changePosition(),
   toggleFullScreen: (mode) => windowManager.toggleFullScreen(mode),
-  forceQuit:       () => forceQuit,
+  forceQuit: () => forceQuit,
 });
-
-// Lazy ref so trayModule is defined after createTray is called
-const trayModule = require('./src/tray');
 
 // ── macOS dock ───────────────────────────────────────────────────────────────
 if (process.platform === 'darwin') app.dock.hide();
 
 // ── App lifecycle ────────────────────────────────────────────────────────────
 app.whenReady().then(async () => {
-  await useAutoUpdater(() => { forceQuit = true; });
+  await useAutoUpdater(() => {
+    forceQuit = true;
+  });
   checkAutoStart();
 
   await windowManager.createMainWindow(!config.has('currentInstance'));
 
   // Hand dependencies to tray module
   createTray({
-    getMainWindow:        () => windowManager.getMainWindow(),
-    showWindow:           () => windowManager.showWindow(),
-    toggleFullScreen:     () => windowManager.toggleFullScreen(),
+    getMainWindow: () => windowManager.getMainWindow(),
+    showWindow: () => windowManager.showWindow(),
+    toggleFullScreen: () => windowManager.toggleFullScreen(),
     openSettingsWindow,
-    getCachedEntities:    () => cachedEntities,
+    getCachedEntities: () => cachedEntities,
     refreshEntityCache,
-    getAutostartEnabled:  () => autostartEnabled,
+    getAutostartEnabled: () => autostartEnabled,
     getUpdateCheckerInterval,
     clearUpdateInterval,
-    useAutoUpdater:       () => useAutoUpdater(() => { forceQuit = true; }),
-    forceQuit:            () => { forceQuit = true; },
+    useAutoUpdater: () =>
+      useAutoUpdater(() => {
+        forceQuit = true;
+      }),
+    forceQuit: () => {
+      forceQuit = true;
+    },
   });
 
   if (process.platform === 'linux') {
@@ -187,11 +194,13 @@ app.whenReady().then(async () => {
 
   // Register all IPC handlers
   registerAll({
-    getMainWindow:    () => windowManager.getMainWindow(),
-    showWindow:       () => windowManager.showWindow(),
+    getMainWindow: () => windowManager.getMainWindow(),
+    showWindow: () => windowManager.showWindow(),
     openSettingsWindow,
     getCachedEntities: () => cachedEntities,
-    setCachedEntities: (entities) => { cachedEntities = entities; },
+    setCachedEntities: (entities) => {
+      cachedEntities = entities;
+    },
     reinitMainWindow: async () => {
       await windowManager.reinitMainWindow();
       if (!availabilityCheckerInterval) {
@@ -201,7 +210,9 @@ app.whenReady().then(async () => {
     addInstance,
     currentInstance,
     bonjour,
-    forceQuit: () => { forceQuit = true; },
+    forceQuit: () => {
+      forceQuit = true;
+    },
   });
 
   if (!availabilityCheckerInterval) {
