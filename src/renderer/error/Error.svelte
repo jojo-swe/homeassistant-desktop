@@ -1,4 +1,27 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+
+  let isLightTheme = $state(false);
+
+  onMount(() => {
+    const savedTheme = localStorage.getItem('settings-theme');
+    if (savedTheme === 'light') {
+      isLightTheme = true;
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  });
+
+  function toggleTheme(): void {
+    isLightTheme = !isLightTheme;
+    if (isLightTheme) {
+      document.documentElement.setAttribute('data-theme', 'light');
+      localStorage.setItem('settings-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('settings-theme', 'dark');
+    }
+  }
+
   function reconnect(): void {
     window.api.send('reconnect');
   }
@@ -9,9 +32,12 @@
 </script>
 
 <div class="container">
-  <div class="error-card">
+  <button class="theme-toggle" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
+    {isLightTheme ? '🌙' : '☀️'}
+  </button>
+  <div class="error-card" role="alert">
     <div class="error-icon">
-      <svg viewBox="0 0 24 24">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
         <line x1="6" y1="6" x2="18" y2="18" />
         <line x1="18" y1="6" x2="6" y2="18" />
       </svg>
@@ -21,8 +47,8 @@
       Your Home Assistant instance is not available. Please check your network connection and try again.
     </p>
     <div class="btn-group">
-      <button class="btn btn-primary" onclick={reconnect}>Reconnect</button>
-      <button class="btn btn-secondary" onclick={restart}>Restart</button>
+      <button class="btn btn-primary" onclick={reconnect} aria-label="Reconnect to Home Assistant">Reconnect</button>
+      <button class="btn btn-secondary" onclick={restart} aria-label="Restart application">Restart</button>
     </div>
   </div>
 </div>
@@ -36,6 +62,23 @@
     height: 100vh;
     padding: 20px;
     gap: 24px;
+    position: relative;
+  }
+  .theme-toggle {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 10px;
+    transition: background var(--transition);
+  }
+  .theme-toggle:hover {
+    background: var(--surface3);
   }
   .error-card {
     background: var(--surface2);
@@ -44,6 +87,7 @@
     padding: 40px 32px;
     text-align: center;
     max-width: 360px;
+    box-shadow: var(--shadow);
   }
   .error-icon {
     width: 56px;

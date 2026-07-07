@@ -12,10 +12,17 @@
   let showCheckmark = $state(false);
   let discoveryVisible = $state(false);
   let discoveredInstances: string[] = $state([]);
+  let isLightTheme = $state(false);
 
   let existingInstances: string[] = [];
 
   onMount(() => {
+    const savedTheme = localStorage.getItem('settings-theme');
+    if (savedTheme === 'light') {
+      isLightTheme = true;
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+
     setTimeout(() => document.getElementById('url')?.focus(), 300);
 
     window.api.send('get-instances');
@@ -48,6 +55,17 @@
       }
     });
   });
+
+  function toggleTheme(): void {
+    isLightTheme = !isLightTheme;
+    if (isLightTheme) {
+      document.documentElement.setAttribute('data-theme', 'light');
+      localStorage.setItem('settings-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('settings-theme', 'dark');
+    }
+  }
 
   function showInstance(instanceUrl: string): void {
     if (instanceUrl === '') return;
@@ -128,16 +146,21 @@
   <div class="header">
     <img src="../assets/favicon.png" alt="Home Assistant Logo" />
     <h1>Home Assistant</h1>
+    <div class="header-actions">
+      <button class="icon-btn" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
+        {isLightTheme ? '🌙' : '☀️'}
+      </button>
+    </div>
   </div>
 
   <p class="subtitle">Enter your Home Assistant URL below, or pick a discovered instance.</p>
 
   {#if discoveryVisible}
-    <div class="discovery-section visible">
+    <div class="discovery-section visible" role="status">
       <div class="discovery-title">Discovered Instances</div>
       <div id="availableInstances">
         {#each discoveredInstances as instanceUrl}
-          <button class="instance-btn" onclick={() => addInstance(instanceUrl)}>{instanceUrl}</button>
+          <button class="instance-btn" onclick={() => addInstance(instanceUrl)} aria-label="Connect to {instanceUrl}">{instanceUrl}</button>
         {/each}
       </div>
     </div>
@@ -168,8 +191,9 @@
         placeholder="http://homeassistant.local:8123"
         class:is-invalid={urlInvalid}
         class:is-valid={urlValid}
+        aria-label="Home Assistant URL"
       />
-      <div class="feedback" class:valid={feedbackValid}>{feedback}</div>
+      <div class="feedback" class:valid={feedbackValid} aria-live="polite">{feedback}</div>
       <button class="btn btn-primary" id="submit" onclick={saveInstance} disabled={submitDisabled}>Connect</button>
     </div>
   {/if}
@@ -189,6 +213,22 @@
     display: flex;
     align-items: center;
     gap: 10px;
+  }
+  .header-actions {
+    margin-left: auto;
+  }
+  .icon-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 10px;
+    transition: background var(--transition);
+  }
+  .icon-btn:hover {
+    background: var(--surface3);
   }
   .header img {
     width: 32px;
@@ -220,7 +260,7 @@
     font-size: 14px;
     padding: 12px 14px;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color var(--transition);
     width: 100%;
   }
   .url-form input:focus {
@@ -266,7 +306,7 @@
     padding: 10px 14px;
     cursor: pointer;
     margin-bottom: 6px;
-    transition: border-color 0.15s;
+    transition: border-color var(--transition);
     text-align: left;
   }
   .instance-btn:hover {

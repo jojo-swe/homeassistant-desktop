@@ -34,4 +34,50 @@ test.describe('Settings window', () => {
     await expect(page.getByText('Export Config')).toBeVisible();
     await expect(page.getByText('Import Config')).toBeVisible();
   });
+
+  test('settings theme toggle changes data-theme attribute', async ({ page }) => {
+    await page.locator('#url').waitFor();
+
+    const settingsPath = require('path').join(__dirname, '../../..', 'out/renderer/settings/index.html');
+    await page.goto('file://' + settingsPath);
+    await page.waitForLoadState('domcontentloaded');
+
+    const themeBtn = page.locator('.icon-btn');
+    await themeBtn.click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  });
+
+  test('settings has entity search with role=search', async ({ page }) => {
+    await page.locator('#url').waitFor();
+
+    const settingsPath = require('path').join(__dirname, '../../..', 'out/renderer/settings/index.html');
+    await page.goto('file://' + settingsPath);
+    await page.waitForLoadState('domcontentloaded');
+
+    const searchSection = page.locator('[role="search"]');
+    await expect(searchSection).toBeVisible();
+    await expect(page.locator('#entitySearch')).toBeVisible();
+  });
+
+  test('settings status message has aria-live', async ({ page }) => {
+    await page.locator('#url').waitFor();
+
+    const settingsPath = require('path').join(__dirname, '../../..', 'out/renderer/settings/index.html');
+    await page.goto('file://' + settingsPath);
+    await page.waitForLoadState('domcontentloaded');
+
+    const statusMsg = page.locator('.status-msg');
+    await expect(statusMsg).toHaveAttribute('aria-live', 'polite');
+  });
+
+  test('settings token toggle has aria-label', async ({ page }) => {
+    await page.locator('#url').waitFor();
+
+    const settingsPath = require('path').join(__dirname, '../../..', 'out/renderer/settings/index.html');
+    await page.goto('file://' + settingsPath);
+    await page.waitForLoadState('domcontentloaded');
+
+    const tokenToggle = page.locator('.token-toggle');
+    await expect(tokenToggle).toHaveAttribute('aria-label', 'Show or hide token');
+  });
 });

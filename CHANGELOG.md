@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-07-07
+
+### Added
+
+- Dark/light theme toggle on Onboarding and Error pages, persisted via `localStorage` (shared with Settings)
+- Accessibility improvements: `aria-label` on all interactive elements, `aria-live` regions for dynamic feedback, `role="alert"` on error card, `role="search"` on entity filter, `role="status"` on discovery section
+- Global `:focus-visible` keyboard navigation styles in `theme.css`
+- Playwright E2E test coverage expanded from 12 to 28 tests, including error page tests, theme toggle tests, and accessibility attribute verification
+- New `error.spec.ts` E2E test file for error page rendering and interaction
+- App icon refresh: new SVG source icon, regenerated PNGs for all platforms (favicon, tray icons, 512x512 master icon)
+- `generate-icons` npm script and `scripts/generate-icons.cjs` for icon regeneration from SVG source
+- Shared `.card` and `.section` utility classes in `theme.css`
+- New CSS variables: `--ha-blue-light`, `--shadow`, `--transition`
+
+### Changed
+
+- Updated dark theme color palette: brighter blue (`#29b6f6`), darker surfaces, improved text contrast
+- Updated light theme color palette: cooler grays, standard color values
+- All hardcoded transition durations replaced with `var(--transition)` for consistency
+- Added `box-shadow: var(--shadow)` to error card, entity list, shortcut rows, and toast notification
+- Pin chip background now uses `--ha-blue-light` variable instead of hardcoded rgba
+- ESLint config now ignores `out/` build artifacts and legacy `.js` files
+
 ## [1.6.0] - 2026-07-07
 
 ### Added

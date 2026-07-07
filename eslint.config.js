@@ -30,6 +30,6 @@ module.exports = [
     },
   },
   {
-    ignores: ['node_modules/', 'dist/', 'build/', 'coverage/'],
+    ignores: ['node_modules/', 'dist/', 'build/', 'coverage/', 'out/', 'src/**/*.js', 'svelte.config.mjs'],
   },
 ];

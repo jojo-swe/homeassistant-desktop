@@ -246,7 +246,7 @@
     <img src="../assets/favicon.png" alt="Home Assistant" />
     <h1>Settings</h1>
     <div class="header-actions">
-      <button class="icon-btn" onclick={toggleTheme} title="Toggle theme">
+      <button class="icon-btn" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
         {isLightTheme ? '🌙' : '☀️'}
       </button>
     </div>
@@ -264,11 +264,11 @@
         <label for="haToken">Long-Lived Access Token</label>
         <div class="token-wrapper">
           <input type={tokenVisible ? 'text' : 'password'} id="haToken" bind:value={haToken} placeholder="eyJ..." />
-          <button class="token-toggle" onclick={toggleTokenVisibility} title="Show/hide token">👁</button>
+          <button class="token-toggle" onclick={toggleTokenVisibility} title="Show/hide token" aria-label="Show or hide token">👁</button>
         </div>
       </div>
 
-      <div class="status-msg" class:ok={connStatusOk} class:error={!connStatusOk}>{connStatus}</div>
+      <div class="status-msg" class:ok={connStatusOk} class:error={!connStatusOk} aria-live="polite">{connStatus}</div>
 
       <div class="row">
         <button class="btn btn-primary" onclick={saveConnection}>Save & Test</button>
@@ -293,6 +293,8 @@
             class:dragging={dragIndex === i}
             draggable="true"
             role="option"
+            tabindex="0"
+            aria-selected="true"
             aria-label="Pinned entity: {pinName(id)}, drag to reorder"
             ondragstart={(e) => onPinDragStart(e, i)}
             ondragover={(e) => onPinDragOver(e, i)}
@@ -301,13 +303,13 @@
           >
             <span class="pin-grip" title="Drag to reorder">⠿</span>
             {pinName(id)}
-            <button onclick={() => unpin(id)} title="Remove">×</button>
+            <button onclick={() => unpin(id)} title="Remove" aria-label="Remove {pinName(id)} from pinned">×</button>
           </div>
         {/each}
       {/if}
     </div>
 
-    <div style="margin-top: 10px" class="entity-search">
+    <div style="margin-top: 10px" class="entity-search" role="search">
       <div class="field" style="margin-bottom: 8px">
         <label for="entitySearch">Filter entities</label>
         <input type="search" id="entitySearch" bind:value={entitySearch} oninput={filterEntities} placeholder="e.g. light, switch, lamp..." />
@@ -336,9 +338,9 @@
         {/each}
         {#if totalPages > 1}
           <div class="entity-pagination">
-            <button onclick={() => changePage(-1)} disabled={currentPage === 0}>‹ Prev</button>
+            <button onclick={() => changePage(-1)} disabled={currentPage === 0} aria-label="Previous page">‹ Prev</button>
             <span>Page {currentPage + 1} of {totalPages} ({currentFiltered.length} entities)</span>
-            <button onclick={() => changePage(1)} disabled={currentPage >= totalPages - 1}>Next ›</button>
+            <button onclick={() => changePage(1)} disabled={currentPage >= totalPages - 1} aria-label="Next page">Next ›</button>
           </div>
         {/if}
       {/if}
@@ -360,7 +362,7 @@
               <div class="shortcut-keys">{s.accelerator}</div>
               <div class="shortcut-entity">{s.entityId} (toggle)</div>
             </div>
-            <button class="btn btn-danger" onclick={() => removeShortcut(s.accelerator)}>Remove</button>
+            <button class="btn btn-danger" onclick={() => removeShortcut(s.accelerator)} aria-label="Remove shortcut {s.accelerator}">Remove</button>
           </div>
         {/each}
       {/if}
@@ -393,7 +395,7 @@
   </div>
 
   {#if toastVisible}
-    <div class="toast show" class:ok={toastOk}>{toastMsg}</div>
+    <div class="toast show" class:ok={toastOk} aria-live="polite">{toastMsg}</div>
   {/if}
 </div>
 
@@ -444,7 +446,7 @@
     cursor: pointer;
     font-size: 16px;
     padding: 4px 10px;
-    transition: background 0.15s;
+    transition: background var(--transition);
   }
   .icon-btn:hover {
     background: var(--surface3);
@@ -492,6 +494,7 @@
     border-radius: var(--radius);
     max-height: 200px;
     overflow-y: auto;
+    box-shadow: var(--shadow);
   }
 
   .entity-item {
@@ -500,7 +503,7 @@
     justify-content: space-between;
     padding: 8px 12px;
     cursor: pointer;
-    transition: background 0.12s;
+    transition: background var(--transition);
     border-bottom: 1px solid var(--border);
     -webkit-user-select: none;
     user-select: none;
@@ -551,7 +554,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    background: rgba(3, 169, 244, 0.15);
+    background: var(--ha-blue-light);
     border: 1px solid rgba(3, 169, 244, 0.3);
     border-radius: 20px;
     padding: 4px 10px;
@@ -559,7 +562,7 @@
     font-weight: 500;
     color: var(--ha-blue);
     cursor: grab;
-    transition: opacity 0.15s;
+    transition: opacity var(--transition);
   }
   .pin-chip:active {
     cursor: grabbing;
@@ -631,6 +634,7 @@
     padding: 8px 12px;
     border-radius: var(--radius);
     border: 1px solid var(--border);
+    box-shadow: var(--shadow);
   }
   .shortcut-keys {
     font-size: 13px;
@@ -655,10 +659,11 @@
     opacity: 0;
     transform: translateY(10px);
     transition:
-      opacity 0.2s,
-      transform 0.2s;
+      opacity var(--transition),
+      transform var(--transition);
     pointer-events: none;
     z-index: 1000;
+    box-shadow: var(--shadow);
   }
   .toast.show {
     opacity: 1;

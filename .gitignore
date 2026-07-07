@@ -7,6 +7,7 @@ out
 dev-app-update.yml
 build/
 coverage/
+test-results/
 *.log
 run_log.txt
 run_error.txt
