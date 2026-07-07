@@ -37,6 +37,7 @@ vi.mock('../../main/haClient', () => ({
 import config from '../../main/config';
 import { globalShortcut } from 'electron';
 import logger from 'electron-log';
+import * as haClient from '../../main/haClient';
 import * as shortcutManager from '../../main/shortcutManager';
 
 describe('shortcutManager', () => {
@@ -110,6 +111,14 @@ describe('shortcutManager', () => {
       expect(globalShortcut.unregister).toHaveBeenCalledWith('Ctrl+Shift+1');
     });
 
+    test('catches errors during unregister in remove', () => {
+      vi.mocked(globalShortcut.unregister).mockImplementationOnce(() => {
+        throw new Error('not registered');
+      });
+      vi.mocked(config.get).mockReturnValue([{ accelerator: 'Ctrl+Shift+1', entityId: 'light.a', service: 'toggle' }] as Shortcut[]);
+      expect(() => shortcutManager.remove('Ctrl+Shift+1')).not.toThrow();
+    });
+
     test('re-registers remaining shortcuts after removal', () => {
       vi.mocked(config.get).mockReturnValue([{ accelerator: 'Ctrl+Shift+1', entityId: 'light.a', service: 'toggle' }] as Shortcut[]);
       shortcutManager.remove('Ctrl+Shift+1');
@@ -176,6 +185,39 @@ describe('shortcutManager', () => {
       ] as Shortcut[]);
       expect(() => shortcutManager.registerAll()).not.toThrow();
       expect(logger.error).toHaveBeenCalled();
+    });
+
+    test('catches errors during unregister in registerAll', () => {
+      vi.mocked(globalShortcut.unregister).mockImplementationOnce(() => {
+        throw new Error('not registered');
+      });
+      vi.mocked(config.get).mockReturnValue([
+        { accelerator: 'Ctrl+Shift+1', entityId: 'light.test', service: 'toggle' },
+      ] as Shortcut[]);
+      expect(() => shortcutManager.registerAll()).not.toThrow();
+    });
+
+    test('shortcut trigger callback calls haClient.toggle', async () => {
+      vi.mocked(config.get).mockReturnValue([
+        { accelerator: 'Ctrl+Shift+1', entityId: 'light.test', service: 'toggle' },
+      ] as Shortcut[]);
+      vi.mocked(haClient.toggle).mockResolvedValue(undefined);
+      shortcutManager.registerAll();
+      const cb = vi.mocked(globalShortcut.register).mock.calls[0][1];
+      await cb();
+      expect(haClient.toggle).toHaveBeenCalledWith('light.test');
+      expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('Shortcut triggered'));
+    });
+
+    test('shortcut trigger callback catches haClient errors', async () => {
+      vi.mocked(config.get).mockReturnValue([
+        { accelerator: 'Ctrl+Shift+1', entityId: 'light.test', service: 'toggle' },
+      ] as Shortcut[]);
+      vi.mocked(haClient.toggle).mockRejectedValue(new Error('HA failed'));
+      shortcutManager.registerAll();
+      const cb = vi.mocked(globalShortcut.register).mock.calls[0][1];
+      await cb();
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Shortcut action failed'));
     });
   });
 

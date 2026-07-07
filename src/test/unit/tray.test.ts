@@ -72,7 +72,7 @@ import { Tray, Menu, app, screen, shell, dialog } from 'electron';
 import Positioner from 'electron-traywindow-positioner';
 import config from '../../main/config';
 import * as haClient from '../../main/haClient';
-import { createTray, getTray, getMenu, changePosition } from '../../main/tray';
+import { createTray, getTray, getMenu, changePosition, setWindowFocusTimer } from '../../main/tray';
 import type { TrayInitDeps } from '../../main/types';
 
 function createDeps(): TrayInitDeps {
@@ -714,6 +714,46 @@ describe('tray', () => {
       showHideItem.click();
       expect(mockWindow.hide).toHaveBeenCalled();
       Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+    });
+  });
+
+  describe('setWindowFocusTimer', () => {
+    test('hides window when mouse is outside', () => {
+      const mockWindow = {
+        getPosition: vi.fn(() => [0, 0]),
+        getSize: vi.fn(() => [420, 460]),
+        hide: vi.fn(),
+      };
+      vi.mocked(deps.getMainWindow).mockReturnValue(mockWindow as any);
+      vi.mocked(screen.getCursorScreenPoint).mockReturnValue({ x: 500, y: 500 } as any);
+      createTray(deps);
+      vi.useFakeTimers();
+      setWindowFocusTimer();
+      vi.advanceTimersByTime(120);
+      expect(mockWindow.hide).toHaveBeenCalled();
+      vi.useRealTimers();
+    });
+
+    test('does not hide window when mouse is inside', () => {
+      const mockWindow = {
+        getPosition: vi.fn(() => [0, 0]),
+        getSize: vi.fn(() => [420, 460]),
+        hide: vi.fn(),
+      };
+      vi.mocked(deps.getMainWindow).mockReturnValue(mockWindow as any);
+      vi.mocked(screen.getCursorScreenPoint).mockReturnValue({ x: 100, y: 100 } as any);
+      createTray(deps);
+      vi.useFakeTimers();
+      setWindowFocusTimer();
+      vi.advanceTimersByTime(120);
+      expect(mockWindow.hide).not.toHaveBeenCalled();
+      vi.useRealTimers();
+    });
+
+    test('does nothing when no main window', () => {
+      vi.mocked(deps.getMainWindow).mockReturnValue(null as any);
+      createTray(deps);
+      expect(() => setWindowFocusTimer()).not.toThrow();
     });
   });
 });

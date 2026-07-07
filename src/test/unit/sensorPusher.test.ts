@@ -37,6 +37,7 @@ import config from '../../main/config';
 import logger from 'electron-log';
 import * as sensorPusher from '../../main/sensorPusher';
 import SystemMonitor from '../../main/systemMonitor';
+import { getActiveWindow, startTracking } from '../../main/activeWindow';
 
 const fetchMock = vi.fn();
 globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -317,6 +318,106 @@ describe('sensorPusher', () => {
 
       await sensorPusher.pushAllSensors();
       await vi.waitFor(() => expect(logger.debug).toHaveBeenCalled());
+    });
+  });
+
+  describe('pushActiveWindow via _startSensors', () => {
+    test('starts tracking on win32 and pushes active window', async () => {
+      const original = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      vi.mocked(config.get).mockImplementation((key: string) => {
+        if (key === 'haBaseUrl') return 'http://ha.local:8123';
+        if (key === 'haToken') return 'test-token';
+        return undefined;
+      });
+      vi.mocked(SystemMonitor.getStats).mockResolvedValue({
+        cpu_load_percent: 45.2,
+        memory_usage_percent: 60.0,
+        idle_time_seconds: 10,
+        is_active: true,
+        webcam_active: false,
+        microphone_active: false,
+        battery_percent: null,
+        battery_charging: null,
+        hostname: 'test',
+        platform: 'win32',
+      });
+      fetchMock.mockResolvedValue({ ok: true });
+      sensorPusher.init(30_000);
+      await vi.waitFor(() => expect(startTracking).toHaveBeenCalled());
+      const trackingCb = vi.mocked(startTracking).mock.calls[0][0];
+      await trackingCb({ process_name: 'chrome', window_title: 'Test' });
+      await vi.waitFor(() => {
+        const activeWindowCall = fetchMock.mock.calls.find(
+          (c) => typeof c[0] === 'string' && c[0].includes('active_window'),
+        );
+        expect(activeWindowCall).toBeDefined();
+      });
+      sensorPusher.stop();
+      Object.defineProperty(process, 'platform', { value: original, configurable: true });
+    });
+
+    test('calls getActiveWindow on non-win32 and pushes result', async () => {
+      const original = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
+      vi.mocked(config.get).mockImplementation((key: string) => {
+        if (key === 'haBaseUrl') return 'http://ha.local:8123';
+        if (key === 'haToken') return 'test-token';
+        return undefined;
+      });
+      vi.mocked(SystemMonitor.getStats).mockResolvedValue({
+        cpu_load_percent: 45.2,
+        memory_usage_percent: 60.0,
+        idle_time_seconds: 10,
+        is_active: true,
+        webcam_active: false,
+        microphone_active: false,
+        battery_percent: null,
+        battery_charging: null,
+        hostname: 'test',
+        platform: 'linux',
+      });
+      fetchMock.mockResolvedValue({ ok: true });
+      vi.mocked(getActiveWindow).mockResolvedValue({ process_name: 'firefox', window_title: 'Page' });
+      sensorPusher.init(30_000);
+      await vi.waitFor(() => expect(getActiveWindow).toHaveBeenCalled());
+      await vi.waitFor(() => {
+        const activeWindowCall = fetchMock.mock.calls.find(
+          (c) => typeof c[0] === 'string' && c[0].includes('active_window'),
+        );
+        expect(activeWindowCall).toBeDefined();
+      });
+      sensorPusher.stop();
+      Object.defineProperty(process, 'platform', { value: original, configurable: true });
+    });
+
+    test('start when already initialized with no interval restarts sensors', async () => {
+      vi.mocked(config.get).mockImplementation((key: string) => {
+        if (key === 'haBaseUrl') return 'http://ha.local:8123';
+        if (key === 'haToken') return 'test-token';
+        return undefined;
+      });
+      vi.mocked(SystemMonitor.getStats).mockResolvedValue({
+        cpu_load_percent: 45.2,
+        memory_usage_percent: 60.0,
+        idle_time_seconds: 10,
+        is_active: true,
+        webcam_active: false,
+        microphone_active: false,
+        battery_percent: null,
+        battery_charging: null,
+        hostname: 'test',
+        platform: 'linux',
+      });
+      fetchMock.mockResolvedValue({ ok: true });
+      sensorPusher.init(30_000);
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      sensorPusher.stop();
+      // After stop, _initialized is false, so start should call init again
+      fetchMock.mockClear();
+      sensorPusher.start(30_000);
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      sensorPusher.stop();
     });
   });
 });

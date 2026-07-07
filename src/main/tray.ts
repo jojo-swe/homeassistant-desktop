@@ -346,4 +346,4 @@ function createTray(deps: TrayInitDeps): void {
   }
 }
 
-export { createTray, getTray, getMenu, changePosition };
+export { createTray, getTray, getMenu, changePosition, setWindowFocusTimer };
