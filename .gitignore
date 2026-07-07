@@ -1,5 +1,7 @@
 node_modules
 dist
+dist-electron
+out
 .idea
 .DS_Store
 dev-app-update.yml
@@ -9,3 +11,4 @@ coverage/
 run_log.txt
 run_error.txt
 job_log.txt
+*.tsbuildinfo

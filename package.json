@@ -11,18 +11,22 @@
     "email": "jojo-swe@users.noreply.github.com"
   },
   "license": "Apache-2.0",
-  "main": "app.js",
+  "main": "out/main/index.js",
   "scripts": {
-    "start": "electron app.js",
-    "build": "electron-builder build --publish never",
-    "build-local-mac": "electron-builder build --mac --x64 --publish never",
-    "build-local-mac-arm": "electron-builder build --mac --arm64 --publish never",
-    "build-local-linux": "electron-builder build --linux appimage --x64 --publish never",
-    "build-local-linux-arm": "electron-builder build --linux rpm --arm64 --publish never",
-    "build-local-win": "electron-builder build --win --x64 --publish never",
-    "build-local-win-arm": "electron-builder build --win --arm64 --publish never",
-    "test": "jest",
-    "test:coverage": "jest --coverage",
+    "dev": "electron-vite dev",
+    "start": "electron-vite preview",
+    "build": "electron-vite build && electron-builder build --publish never",
+    "build:dir": "electron-vite build",
+    "build-local-mac": "electron-vite build && electron-builder build --mac --x64 --publish never",
+    "build-local-mac-arm": "electron-vite build && electron-builder build --mac --arm64 --publish never",
+    "build-local-linux": "electron-vite build && electron-builder build --linux appimage --x64 --publish never",
+    "build-local-linux-arm": "electron-vite build && electron-builder build --linux rpm --arm64 --publish never",
+    "build-local-win": "electron-vite build && electron-builder build --win --x64 --publish never",
+    "build-local-win-arm": "electron-vite build && electron-builder build --win --arm64 --publish never",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "svelte-check && tsc --noEmit -p tsconfig.node.json",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",
     "format": "prettier --write .",
@@ -38,13 +42,24 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@sveltejs/vite-plugin-svelte": "^5.1.1",
+    "@types/node": "^26.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.63.0",
+    "@typescript-eslint/parser": "^8.63.0",
+    "@vitest/coverage-v8": "^3.2.7",
     "electron": "^43.0.0",
     "electron-builder": "^26.15.3",
+    "electron-vite": "^3.1.0",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^9.1.2",
     "globals": "^17.7.0",
-    "jest": "^29.7.0",
-    "prettier": "^3.9.4"
+    "jsdom": "^29.1.1",
+    "prettier": "^3.9.4",
+    "svelte": "^5.56.4",
+    "svelte-check": "^4.7.2",
+    "typescript": "^6.0.3",
+    "vite": "^6.4.3",
+    "vitest": "^3.2.7"
   },
   "engines": {
     "node": ">= 20"
@@ -53,6 +68,15 @@
     "appId": "io.github.jojo_swe.homeassistant-desktop",
     "artifactName": "${productName}-v${version}-${os}-${arch}.${ext}",
     "productName": "Home Assistant Desktop",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "assets/**/*",
+      "build/**/*",
+      "io.github.jojo_swe.homeassistant-desktop.*"
+    ],
     "publish": {
       "provider": "github",
       "owner": "jojo-swe",
