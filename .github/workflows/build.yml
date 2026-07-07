@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Build (electron-vite)
+        run: npm run build:dir
+
       - name: Set publish flag
         id: publish
         run: echo "flag=--publish always" >> $GITHUB_OUTPUT
@@ -37,14 +40,14 @@ jobs:
 
       - name: Build & release macOS
         if: runner.os == 'macOS'
-        run: npx electron-builder --mac --x64 --arm64 ${{ steps.publish.outputs.flag }}
+        run: npm run build:dir && npx electron-builder --mac --x64 --arm64 ${{ steps.publish.outputs.flag }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Build & release Windows
         if: runner.os == 'Windows'
-        run: npx electron-builder --win --x64 ${{ steps.publish.outputs.flag }}
+        run: npm run build:dir && npx electron-builder --win --x64 ${{ steps.publish.outputs.flag }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -56,6 +59,6 @@ jobs:
 
       - name: Build & release Linux
         if: runner.os == 'Linux'
-        run: npx electron-builder --linux AppImage deb rpm --x64 ${{ steps.publish.outputs.flag }}
+        run: npm run build:dir && npx electron-builder --linux AppImage deb rpm --x64 ${{ steps.publish.outputs.flag }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
