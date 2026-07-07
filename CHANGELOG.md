@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sensorPusher.start()` method to begin pushing after HA is configured via Settings
 - Shared `src/instances.js` module to eliminate duplicated `currentInstance`/`addInstance`
 - Shared `src/ipc-channels.js` module to synchronize preload and IPC channel allowlists
+- Flatpak manifest, `.desktop` file, and AppStream metainfo for Linux desktop integration
+- `appId` updated to reverse-DNS convention (`io.github.jojo_swe.homeassistant-desktop`)
+- Linux `StartupWMClass` and `libayatana-appindicator3-1` deb dependency for tray icon on GNOME/KDE
+- Packaging validation tests (assets, packaging, releases)
 
 ### Changed
 
