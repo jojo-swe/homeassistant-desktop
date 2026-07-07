@@ -80,8 +80,7 @@
         "deb",
         "rpm"
       ],
-      "category": "Utility",
-      "desktopName": "homeassistant-desktop.desktop"
+      "category": "Utility"
     }
   }
 }

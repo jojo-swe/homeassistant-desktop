@@ -37,14 +37,14 @@ jobs:
 
       - name: Build & release macOS
         if: runner.os == 'macOS'
-        run: npx electron-builder --x64 --arm64 ${{ steps.publish.outputs.flag }}
+        run: npx electron-builder --mac --x64 --arm64 ${{ steps.publish.outputs.flag }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Build & release Windows
         if: runner.os == 'Windows'
-        run: npx electron-builder --x64 ${{ steps.publish.outputs.flag }}
+        run: npx electron-builder --win --x64 ${{ steps.publish.outputs.flag }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
