@@ -53,6 +53,14 @@ Your PC securely listens for `desktop_command` events from Home Assistant. Remot
 - Resizable window with persistent layout
 - Global keyboard shortcut configuration
 - Test connection button with feedback
+- Export / import configuration
+
+### Theming & Accessibility
+
+- **Dark / Light Theme Toggle** — Switch between dark and light themes on any page (onboarding, settings, error); preference persists across sessions via `localStorage`
+- **Accessibility** — ARIA labels on all interactive elements, `aria-live` regions for dynamic feedback, keyboard-visible focus rings, `role="alert"` on error states, `role="search"` on entity filter
+- **Modern Color Palette** — Updated dark and light theme colors with improved contrast ratios and consistent CSS variables (`--shadow`, `--transition`, `--ha-blue-light`)
+- **Refreshed App Icons** — New SVG source icon with generated PNGs for all platforms (tray, favicon, 512px master)
 
 ### Security
 
@@ -77,16 +85,28 @@ You can fetch the desktop sensors (CPU, Active Window, Webcam) from the Home Ass
 # Install dependencies
 npm install
 
-# Run the app
+# Run the app (dev mode with hot reload)
+npm run dev
+
+# Preview the built app
 npm start
 
 # Lint and format
 npm run lint
 npm run format
 
-# Run tests
+# Run unit tests
 npm test
 npm run test:coverage
+
+# Run E2E tests (builds first, then launches Electron)
+npm run test:e2e
+
+# Type checking
+npm run typecheck
+
+# Regenerate app icons from SVG source
+npm run generate-icons
 
 # Build for current platform
 npm run build
@@ -94,29 +114,42 @@ npm run build
 
 ### Tech Stack
 
-| Component        | Version                |
-| ---------------- | ---------------------- |
-| Electron         | 43                     |
-| Node.js          | ≥ 20                   |
-| electron-builder | 26                     |
-| electron-updater | 6                      |
-| Test framework   | Jest (41 tests)        |
-| Linter           | ESLint 9 (flat config) |
-| Formatter        | Prettier 3             |
+| Component          | Version                  |
+| ------------------ | ------------------------ |
+| Electron           | 43                       |
+| Node.js            | ≥ 20                     |
+| electron-builder   | 26                       |
+| electron-updater   | 6                        |
+| Renderer framework | Svelte 5                 |
+| Build tool         | electron-vite 3          |
+| Unit tests         | Vitest (291 tests)       |
+| E2E tests          | Playwright (28 tests)    |
+| Linter             | ESLint 9 (flat config)   |
+| Formatter          | Prettier 3               |
+| Language           | TypeScript (strict)      |
 
 ## 🗺️ Roadmap
 
-### v1.6.0 (Current — July 2026)
+### v1.7.0 (Current — July 2026)
+
+- ✅ Dark/light theme toggle on all renderer pages (onboarding, settings, error)
+- ✅ Accessibility audit: ARIA labels, aria-live regions, focus-visible styles, role attributes
+- ✅ Branding refresh: modernized color palette, new SVG-based app icons, shared CSS utilities
+- ✅ Expanded E2E test coverage from 12 to 28 tests (error page, theme toggle, a11y attributes)
+- ✅ CI workflow with xvfb for Linux E2E testing
+
+### v1.6.0 (July 2026)
 
 - ✅ Stability fixes (6 critical bugs)
 - ✅ CI/CD pipeline with GitHub Actions
 - ✅ ESLint + Prettier code quality tooling
-- ✅ Jest test framework (41 unit tests across 5 suites)
+- ✅ Vitest test framework (291 unit tests across 21 suites)
 - ✅ Shared `theme.css` for unified dark theme
-- ✅ Redesigned onboarding, error, and settings pages
+- ✅ Redesigned onboarding, error, and settings pages (Svelte 5 migration)
 - ✅ Tray menu improvements (status indicator, refresh entities)
 - ✅ Security patches (0 vulnerabilities)
 - ✅ Electron 43, electron-updater 6, electron-builder 26
+- ✅ Full TypeScript migration (strict mode)
 
 ### v2.0.0 — Liquid Glass UI Redesign (Planned)
 
@@ -127,7 +160,7 @@ Inspired by the "Liquid Glass" design language from iOS 26 — translucent, laye
 - **Native window vibrancy** — macOS `vibrancy: 'under-window'`, Windows 11 `backgroundMaterial: 'acrylic'`, Linux CSS fallback
 - **Dynamic accent color** — Detect HA theme color via `/api/config` and apply throughout the app
 - **Animated transitions** — Fade+scale page transitions, stagger fade-ins, `prefers-reduced-motion` support
-- **TypeScript migration** — Type-safe codebase
+- **TypeScript migration** — Type-safe codebase ✅ (completed in v1.6.0)
 
 See the full roadmap in [CHANGELOG.md](./CHANGELOG.md) for release history.
 
