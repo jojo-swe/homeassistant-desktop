@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.jojo_swe.homeassistant-desktop</id>
+  <name>Home Assistant Desktop</name>
+  <summary>Desktop companion app for Home Assistant</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+  <description>
+    <p>
+      A desktop companion application for Home Assistant that runs in the
+      system tray. Provides quick access to your Home Assistant dashboard,
+      desktop sensor integration, notifications, and entity quick-actions
+      from the tray menu.
+    </p>
+  </description>
+  <url type="homepage">https://github.com/jojo-swe/homeassistant-desktop</url>
+  <content_rating type="oars-1.1" />
+  <launchable type="desktop-id">io.github.jojo_swe.homeassistant-desktop.desktop</launchable>
+
+  <releases>
+    <release version="1.6.0" date="2026-07-07" />
+    <release version="1.5.4" date="2026-03-21" />
+  </releases>
+</component>

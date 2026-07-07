@@ -50,7 +50,7 @@
     "node": ">= 20"
   },
   "build": {
-    "appId": "com.electron.homeassistant-desktop",
+    "appId": "io.github.jojo_swe.homeassistant-desktop",
     "artifactName": "${productName}-v${version}-${os}-${arch}.${ext}",
     "productName": "Home Assistant Desktop",
     "publish": {
@@ -80,7 +80,15 @@
         "deb",
         "rpm"
       ],
-      "category": "Utility"
+      "category": "Network",
+      "desktop": {
+        "StartupWMClass": "homeassistant-desktop"
+      }
+    },
+    "deb": {
+      "depends": [
+        "libayatana-appindicator3-1"
+      ]
     }
   }
 }
