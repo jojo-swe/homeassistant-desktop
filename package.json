@@ -6,7 +6,10 @@
   },
   "version": "1.6.0",
   "description": "Desktop App (Windows / macOS / Linux) for Home Assistant built with Electron",
-  "author": "Ivan Prodanov",
+  "author": {
+    "name": "jojo-swe",
+    "email": "jojo-swe@users.noreply.github.com"
+  },
   "license": "Apache-2.0",
   "main": "app.js",
   "scripts": {
@@ -76,7 +79,9 @@
         "AppImage",
         "deb",
         "rpm"
-      ]
+      ],
+      "category": "Utility",
+      "desktopName": "homeassistant-desktop.desktop"
     }
   }
 }
