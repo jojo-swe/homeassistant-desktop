@@ -29,6 +29,8 @@ export const INVOKE_CHANNELS = [
   'get-shortcuts',
   'save-shortcut',
   'remove-shortcut',
+  'export-config',
+  'import-config',
 ] as const;
 
 export type SendChannel = (typeof SEND_CHANNELS)[number];

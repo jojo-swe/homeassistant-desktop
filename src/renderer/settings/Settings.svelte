@@ -38,9 +38,16 @@
   let currentPage = $state(0);
   let currentFiltered: HAEntity[] = $state([]);
 
+  let isLightTheme = $state(false);
+  let dragIndex = $state<number | null>(null);
   let toastTimeout: ReturnType<typeof setTimeout> | null = null;
 
   onMount(() => {
+    const savedTheme = localStorage.getItem('settings-theme');
+    if (savedTheme === 'light') {
+      isLightTheme = true;
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
     window.api.on('settings-loaded', (settings: unknown) => {
       const s = settings as Settings;
       haUrl = s.haBaseUrl || '';
@@ -56,6 +63,17 @@
 
     window.api.send('settings-open');
   });
+
+  function toggleTheme(): void {
+    isLightTheme = !isLightTheme;
+    if (isLightTheme) {
+      document.documentElement.setAttribute('data-theme', 'light');
+      localStorage.setItem('settings-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('settings-theme', 'dark');
+    }
+  }
 
   function showToast(msg: string, isOk: boolean): void {
     toastMsg = msg;
@@ -149,6 +167,51 @@
     filterEntities();
   }
 
+  function onPinDragStart(event: DragEvent, index: number): void {
+    dragIndex = index;
+    event.dataTransfer?.setData('text/plain', String(index));
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  }
+
+  function onPinDragOver(event: DragEvent, index: number): void {
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+  }
+
+  async function onPinDrop(event: DragEvent, index: number): Promise<void> {
+    event.preventDefault();
+    if (dragIndex === null || dragIndex === index) return;
+    const reordered = [...pinnedIds];
+    const [moved] = reordered.splice(dragIndex, 1);
+    reordered.splice(index, 0, moved);
+    pinnedIds = reordered;
+    dragIndex = null;
+    await window.api.invoke('save-pinned', pinnedIds);
+  }
+
+  function onPinDragEnd(): void {
+    dragIndex = null;
+  }
+
+  async function exportConfig(): Promise<void> {
+    const result = (await window.api.invoke('export-config')) as { ok: boolean; error?: string };
+    if (result.ok) {
+      showToast('Config exported', true);
+    } else if (result.error !== 'Cancelled') {
+      showToast('Export failed: ' + (result.error || 'Unknown'), false);
+    }
+  }
+
+  async function importConfig(): Promise<void> {
+    const result = (await window.api.invoke('import-config')) as { ok: boolean; error?: string };
+    if (result.ok) {
+      showToast('Config imported — reloading...', true);
+      setTimeout(() => window.api.send('settings-open'), 800);
+    } else if (result.error !== 'Cancelled') {
+      showToast('Import failed: ' + (result.error || 'Unknown'), false);
+    }
+  }
+
   async function loadShortcuts(): Promise<void> {
     allShortcuts = (await window.api.invoke('get-shortcuts')) as Shortcut[];
   }
@@ -182,6 +245,11 @@
   <div class="header">
     <img src="../assets/favicon.png" alt="Home Assistant" />
     <h1>Settings</h1>
+    <div class="header-actions">
+      <button class="icon-btn" onclick={toggleTheme} title="Toggle theme">
+        {isLightTheme ? '🌙' : '☀️'}
+      </button>
+    </div>
   </div>
 
   <div>
@@ -219,8 +287,19 @@
       {#if pinnedIds.length === 0}
         <span class="empty-state">No entities pinned yet.</span>
       {:else}
-        {#each renderPins() as id (id)}
-          <div class="pin-chip">
+        {#each renderPins() as id, i (id)}
+          <div
+            class="pin-chip"
+            class:dragging={dragIndex === i}
+            draggable="true"
+            role="option"
+            aria-label="Pinned entity: {pinName(id)}, drag to reorder"
+            ondragstart={(e) => onPinDragStart(e, i)}
+            ondragover={(e) => onPinDragOver(e, i)}
+            ondrop={(e) => onPinDrop(e, i)}
+            ondragend={onPinDragEnd}
+          >
+            <span class="pin-grip" title="Drag to reorder">⠿</span>
             {pinName(id)}
             <button onclick={() => unpin(id)} title="Remove">×</button>
           </div>
@@ -305,6 +384,14 @@
     </div>
   </div>
 
+  <div style="margin-top: 10px">
+    <div class="section-title">Configuration</div>
+    <div class="row" style="gap: 8px">
+      <button class="btn btn-secondary" onclick={exportConfig}>Export Config</button>
+      <button class="btn btn-secondary" onclick={importConfig}>Import Config</button>
+    </div>
+  </div>
+
   {#if toastVisible}
     <div class="toast show" class:ok={toastOk}>{toastMsg}</div>
   {/if}
@@ -343,6 +430,24 @@
     font-size: 15px;
     font-weight: 600;
     color: var(--text);
+  }
+
+  .header-actions {
+    margin-left: auto;
+  }
+
+  .icon-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 10px;
+    transition: background 0.15s;
+  }
+  .icon-btn:hover {
+    background: var(--surface3);
   }
 
   .section-title {
@@ -453,6 +558,19 @@
     font-size: 11px;
     font-weight: 500;
     color: var(--ha-blue);
+    cursor: grab;
+    transition: opacity 0.15s;
+  }
+  .pin-chip:active {
+    cursor: grabbing;
+  }
+  .pin-chip.dragging {
+    opacity: 0.4;
+  }
+  .pin-grip {
+    font-size: 12px;
+    opacity: 0.5;
+    cursor: grab;
   }
   .pin-chip button {
     background: none;

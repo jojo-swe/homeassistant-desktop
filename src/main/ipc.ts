@@ -1,4 +1,5 @@
-import { ipcMain, app } from 'electron';
+import { ipcMain, app, dialog } from 'electron';
+import * as fs from 'fs';
 import logger from 'electron-log';
 import config from './config';
 import SystemMonitor from './systemMonitor';
@@ -144,6 +145,61 @@ function registerAll(deps: IpcRegisterDeps): void {
   ipcMain.handle('remove-shortcut', async (_event, accelerator: string) => {
     shortcutManager.remove(accelerator);
     return { ok: true };
+  });
+
+  ipcMain.handle('export-config', async () => {
+    const result = await dialog.showSaveDialog({
+      title: 'Export Configuration',
+      defaultPath: 'homeassistant-desktop-config.json',
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+    });
+    if (result.canceled || !result.filePath) return { ok: false, error: 'Cancelled' };
+    try {
+      const exportData = {
+        haBaseUrl: config.get('haBaseUrl'),
+        haToken: config.get('haToken'),
+        pinnedEntities: config.get('pinnedEntities') || [],
+        shortcuts: config.get('shortcuts') || [],
+        allInstances: config.get('allInstances') || [],
+        automaticSwitching: config.get('automaticSwitching'),
+        detachedMode: config.get('detachedMode'),
+        disableHover: config.get('disableHover'),
+        stayOnTop: config.get('stayOnTop'),
+        shortcutEnabled: config.get('shortcutEnabled'),
+        autoUpdate: config.get('autoUpdate'),
+      };
+      fs.writeFileSync(result.filePath, JSON.stringify(exportData, null, 2), 'utf-8');
+      logger.info(`Config exported to ${result.filePath}`);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  });
+
+  ipcMain.handle('import-config', async () => {
+    const result = await dialog.showOpenDialog({
+      title: 'Import Configuration',
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return { ok: false, error: 'Cancelled' };
+    try {
+      const filePath = result.filePaths[0];
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      const data = JSON.parse(raw);
+      const keys = [
+        'haBaseUrl', 'haToken', 'pinnedEntities', 'shortcuts',
+        'allInstances', 'automaticSwitching', 'detachedMode',
+        'disableHover', 'stayOnTop', 'shortcutEnabled', 'autoUpdate',
+      ];
+      for (const key of keys) {
+        if (data[key] !== undefined) config.set(key, data[key]);
+      }
+      logger.info(`Config imported from ${filePath}`);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
   });
 
   logger.info('IPC handlers registered.');
