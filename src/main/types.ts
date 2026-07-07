@@ -116,3 +116,14 @@ export interface EntityAttributes {
   idle_seconds?: number;
   window_title?: string;
 }
+
+export interface AppContext {
+  forceQuit: boolean;
+  autostartEnabled: boolean;
+  cachedEntities: HAEntity[];
+  setForceQuit: (value: boolean) => void;
+  getForceQuit: () => boolean;
+  getAutostartEnabled: () => boolean;
+  getCachedEntities: () => HAEntity[];
+  setCachedEntities: (entities: HAEntity[]) => void;
+}
