@@ -1,0 +1,39 @@
+version: 2
+updates:
+  # npm dependencies — monthly, devDependencies only to avoid breaking runtime
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    allow:
+      - dependency-type: development
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - dev
+    commit-message:
+      prefix: "chore(deps-dev)"
+    groups:
+      eslint:
+        patterns:
+          - "eslint"
+          - "@eslint/*"
+      jest:
+        patterns:
+          - "jest"
+          - "@types/jest"
+      electron-builder:
+        patterns:
+          - "electron-builder"
+          - "@electron/*"
+
+  # GitHub Actions — monthly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: "chore(ci)"
