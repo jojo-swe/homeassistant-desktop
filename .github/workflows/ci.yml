@@ -49,3 +49,27 @@ jobs:
 
       - name: Build (electron-vite)
         run: npm run build:dir
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v7
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: Build and run E2E tests
+        run: npm run test:e2e
+        env:
+          DISPLAY: ':99'

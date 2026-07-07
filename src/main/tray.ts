@@ -5,8 +5,8 @@ import config from './config';
 import * as haClient from './haClient';
 import type { HAEntity, TrayInitDeps } from './types';
 
-const ICON_WIN = `${__dirname}/../assets/IconWin.png`;
-const ICON_MAC = `${__dirname}/../assets/IconTemplate.png`;
+const ICON_WIN = `${__dirname}/../../assets/IconWin.png`;
+const ICON_MAC = `${__dirname}/../../assets/IconTemplate.png`;
 
 let tray: Tray | null = null;
 let _getMainWindow: () => BrowserWindow | null;
