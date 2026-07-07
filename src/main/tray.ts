@@ -1,4 +1,4 @@
-import { Tray, Menu, app, screen, shell, type BrowserWindow, type MenuItemConstructorOptions } from 'electron';
+import { Tray, Menu, app, screen, shell, dialog, type BrowserWindow, type MenuItemConstructorOptions } from 'electron';
 import Positioner from 'electron-traywindow-positioner';
 import logger from 'electron-log';
 import config from './config';
@@ -300,7 +300,6 @@ function getMenu(): Menu {
     {
       label: '⚠️ Reset Application',
       click: () => {
-        const { dialog } = require('electron');
         dialog
           .showMessageBox({
             message: 'Are you sure you want to reset Home Assistant Desktop?',

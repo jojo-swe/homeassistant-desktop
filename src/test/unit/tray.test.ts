@@ -26,6 +26,9 @@ vi.mock('electron', () => ({
     getCursorScreenPoint: vi.fn(() => ({ x: 100, y: 100 })),
   },
   shell: { openExternal: vi.fn() },
+  dialog: {
+    showMessageBox: vi.fn().mockResolvedValue({ response: 2 }),
+  },
 }));
 
 vi.mock('electron-traywindow-positioner', () => ({
@@ -65,7 +68,8 @@ vi.mock('../../main/haClient', () => ({
   toggle: vi.fn(),
 }));
 
-import { Tray, Menu, app, screen, shell } from 'electron';
+import { Tray, Menu, app, screen, shell, dialog } from 'electron';
+import Positioner from 'electron-traywindow-positioner';
 import config from '../../main/config';
 import * as haClient from '../../main/haClient';
 import { createTray, getTray, getMenu, changePosition } from '../../main/tray';
@@ -511,6 +515,205 @@ describe('tray', () => {
       createTray(deps);
       changePosition();
       expect(screen.getDisplayNearestPoint).toHaveBeenCalled();
+    });
+
+    test('positions window for top taskbar', () => {
+      vi.mocked(Positioner.getTaskbarPosition).mockReturnValue('top');
+      createTray(deps);
+      changePosition();
+      expect(Positioner.position).toHaveBeenCalled();
+    });
+
+    test('positions window for bottom taskbar with overflow (right edge)', () => {
+      vi.mocked(Positioner.getTaskbarPosition).mockReturnValue('bottom');
+      mockTray.getBounds.mockReturnValue({ x: 1800, y: 1040, width: 40, height: 40 });
+      vi.mocked(deps.getMainWindow).mockReturnValue({
+        getBounds: vi.fn(() => ({ x: 0, y: 0, width: 420, height: 460 })),
+        getPosition: vi.fn(() => [0, 0]),
+        getSize: vi.fn(() => [420, 460]),
+        setPosition: vi.fn(),
+        hide: vi.fn(),
+        show: vi.fn(),
+        isVisible: vi.fn(() => false),
+        loadURL: vi.fn().mockResolvedValue(undefined),
+        isAlwaysOnTop: vi.fn(() => false),
+        setAlwaysOnTop: vi.fn(),
+        webContents: { session: { clearCache: vi.fn(), clearStorageData: vi.fn() } },
+      } as any);
+      createTray(deps);
+      changePosition();
+      expect(Positioner.calculate).toHaveBeenCalled();
+    });
+
+    test('positions window for left taskbar', () => {
+      vi.mocked(Positioner.getTaskbarPosition).mockReturnValue('left');
+      createTray(deps);
+      changePosition();
+      expect(Positioner.calculate).toHaveBeenCalled();
+    });
+
+    test('positions window for right taskbar with overflow (bottom edge)', () => {
+      vi.mocked(Positioner.getTaskbarPosition).mockReturnValue('right');
+      mockTray.getBounds.mockReturnValue({ x: 1880, y: 900, width: 40, height: 40 });
+      vi.mocked(deps.getMainWindow).mockReturnValue({
+        getBounds: vi.fn(() => ({ x: 0, y: 0, width: 420, height: 460 })),
+        getPosition: vi.fn(() => [0, 0]),
+        getSize: vi.fn(() => [420, 460]),
+        setPosition: vi.fn(),
+        hide: vi.fn(),
+        show: vi.fn(),
+        isVisible: vi.fn(() => false),
+        loadURL: vi.fn().mockResolvedValue(undefined),
+        isAlwaysOnTop: vi.fn(() => false),
+        setAlwaysOnTop: vi.fn(),
+        webContents: { session: { clearCache: vi.fn(), clearStorageData: vi.fn() } },
+      } as any);
+      createTray(deps);
+      changePosition();
+      expect(Positioner.calculate).toHaveBeenCalled();
+    });
+
+    test('does nothing when tray is null', () => {
+      vi.mocked(deps.getMainWindow).mockReturnValue({
+        getBounds: vi.fn(() => ({ x: 0, y: 0, width: 420, height: 460 })),
+        getPosition: vi.fn(() => [0, 0]),
+        getSize: vi.fn(() => [420, 460]),
+        setPosition: vi.fn(),
+      } as any);
+      // Don't call createTray so tray stays null
+      expect(() => changePosition()).not.toThrow();
+    });
+  });
+
+  describe('reset application', () => {
+    test('reset everything clears config and session', async () => {
+      const mockWindow = {
+        loadURL: vi.fn().mockResolvedValue(undefined),
+        show: vi.fn(),
+        hide: vi.fn(),
+        isVisible: vi.fn(() => false),
+        isAlwaysOnTop: vi.fn(() => false),
+        setAlwaysOnTop: vi.fn(),
+        webContents: { session: { clearCache: vi.fn().mockResolvedValue(undefined), clearStorageData: vi.fn().mockResolvedValue(undefined) } },
+      };
+      vi.mocked(deps.getMainWindow).mockReturnValue(mockWindow as any);
+      vi.mocked(config.get).mockImplementation((key: string) => {
+        if (key === 'allInstances') return [];
+        return undefined;
+      });
+      vi.mocked(config.has).mockReturnValue(false);
+      vi.mocked(dialog.showMessageBox).mockResolvedValue({ response: 0 } as any);
+      createTray(deps);
+      getMenu();
+      const template = vi.mocked(Menu.buildFromTemplate).mock.calls.at(-1)![0] as any[];
+      const resetItem = template.find((item: any) => item.label === '⚠️ Reset Application');
+      await resetItem.click();
+      await vi.waitFor(() => expect(config.clear).toHaveBeenCalled());
+      await vi.waitFor(() => expect(app.relaunch).toHaveBeenCalled(), { timeout: 2000 });
+      expect(mockWindow.webContents.session.clearCache).toHaveBeenCalled();
+      expect(mockWindow.webContents.session.clearStorageData).toHaveBeenCalled();
+      expect(app.exit).toHaveBeenCalled();
+    });
+
+    test('reset windows deletes window config keys', async () => {
+      vi.mocked(config.get).mockImplementation((key: string) => {
+        if (key === 'allInstances') return [];
+        return undefined;
+      });
+      vi.mocked(config.has).mockReturnValue(false);
+      vi.mocked(dialog.showMessageBox).mockResolvedValue({ response: 1 } as any);
+      createTray(deps);
+      getMenu();
+      const template = vi.mocked(Menu.buildFromTemplate).mock.calls.at(-1)![0] as any[];
+      const resetItem = template.find((item: any) => item.label === '⚠️ Reset Application');
+      await resetItem.click();
+      await vi.waitFor(() => expect(config.delete).toHaveBeenCalledWith('windowSize'));
+      expect(config.delete).toHaveBeenCalledWith('windowSizeDetached');
+      expect(config.delete).toHaveBeenCalledWith('windowPosition');
+      expect(config.delete).toHaveBeenCalledWith('fullScreen');
+      expect(config.delete).toHaveBeenCalledWith('detachedMode');
+      expect(app.relaunch).toHaveBeenCalled();
+    });
+
+    test('cancel does nothing', async () => {
+      vi.mocked(config.get).mockImplementation((key: string) => {
+        if (key === 'allInstances') return [];
+        return undefined;
+      });
+      vi.mocked(config.has).mockReturnValue(false);
+      vi.mocked(dialog.showMessageBox).mockResolvedValue({ response: 2 } as any);
+      createTray(deps);
+      getMenu();
+      const template = vi.mocked(Menu.buildFromTemplate).mock.calls.at(-1)![0] as any[];
+      const resetItem = template.find((item: any) => item.label === '⚠️ Reset Application');
+      await resetItem.click();
+      await vi.waitFor(() => expect(dialog.showMessageBox).toHaveBeenCalled());
+      expect(config.clear).not.toHaveBeenCalled();
+      expect(app.relaunch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('stay on top click with main window', () => {
+    test('sets always on top and shows window when already on top', () => {
+      const mockWindow = {
+        getBounds: vi.fn(() => ({ x: 0, y: 0, width: 420, height: 460 })),
+        getPosition: vi.fn(() => [0, 0]),
+        getSize: vi.fn(() => [420, 460]),
+        setPosition: vi.fn(),
+        hide: vi.fn(),
+        show: vi.fn(),
+        isVisible: vi.fn(() => false),
+        loadURL: vi.fn().mockResolvedValue(undefined),
+        isAlwaysOnTop: vi.fn(() => true),
+        setAlwaysOnTop: vi.fn(),
+        webContents: { session: { clearCache: vi.fn(), clearStorageData: vi.fn() } },
+      };
+      vi.mocked(deps.getMainWindow).mockReturnValue(mockWindow as any);
+      const store: Record<string, unknown> = { stayOnTop: true };
+      vi.mocked(config.get).mockImplementation((key: string) => store[key] as any);
+      vi.mocked(config.set).mockImplementation((key: string, val: unknown) => { store[key] = val; });
+      vi.mocked(config.has).mockReturnValue(false);
+      createTray(deps);
+      getMenu();
+      const template = vi.mocked(Menu.buildFromTemplate).mock.calls.at(-1)![0] as any[];
+      const stayItem = template.find((item: any) => item.label === 'Stay on Top');
+      stayItem.click();
+      expect(config.set).toHaveBeenCalledWith('stayOnTop', false);
+      expect(mockWindow.setAlwaysOnTop).toHaveBeenCalledWith(false);
+    });
+  });
+
+  describe('show/hide window click (linux)', () => {
+    test('toggles window visibility', () => {
+      const mockWindow = {
+        getBounds: vi.fn(() => ({ x: 0, y: 0, width: 420, height: 460 })),
+        getPosition: vi.fn(() => [0, 0]),
+        getSize: vi.fn(() => [420, 460]),
+        setPosition: vi.fn(),
+        hide: vi.fn(),
+        show: vi.fn(),
+        isVisible: vi.fn(() => true),
+        loadURL: vi.fn().mockResolvedValue(undefined),
+        isAlwaysOnTop: vi.fn(() => false),
+        setAlwaysOnTop: vi.fn(),
+        webContents: { session: { clearCache: vi.fn(), clearStorageData: vi.fn() } },
+      };
+      vi.mocked(deps.getMainWindow).mockReturnValue(mockWindow as any);
+      vi.mocked(config.get).mockImplementation((key: string) => {
+        if (key === 'allInstances') return [];
+        return undefined;
+      });
+      vi.mocked(config.has).mockReturnValue(false);
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
+      createTray(deps);
+      getMenu();
+      const template = vi.mocked(Menu.buildFromTemplate).mock.calls.at(-1)![0] as any[];
+      const showHideItem = template.find((item: any) => item.label === 'Show/Hide Window');
+      expect(showHideItem).toBeDefined();
+      showHideItem.click();
+      expect(mockWindow.hide).toHaveBeenCalled();
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
     });
   });
 });
