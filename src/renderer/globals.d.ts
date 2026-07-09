@@ -4,6 +4,16 @@ declare module '*.svelte' {
   export default component;
 }
 
+declare module '*.png' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.svg' {
+  const src: string;
+  export default src;
+}
+
 interface Window {
   api: {
     send: (channel: string, data?: unknown) => void;

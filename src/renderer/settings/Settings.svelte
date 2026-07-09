@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import favicon from '../assets/favicon.png';
 
   interface HAEntity {
     entity_id: string;
@@ -252,7 +253,7 @@
 
 <div class="app">
   <div class="header">
-    <img src="../assets/favicon.png" alt="Home Assistant" />
+    <img src={favicon} alt="Home Assistant" />
     <h1>Settings</h1>
     <div class="header-actions">
       <button class="icon-btn glass" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">

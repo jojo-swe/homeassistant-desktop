@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import favicon from './assets/favicon.png';
 
   let url = $state('');
   let feedback = $state('');
@@ -144,7 +145,7 @@
 
 <div class="container">
   <div class="header">
-    <img src="../assets/favicon.png" alt="Home Assistant Logo" />
+    <img src={favicon} alt="Home Assistant Logo" />
     <h1>Home Assistant</h1>
     <div class="header-actions">
       <button class="icon-btn glass" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
