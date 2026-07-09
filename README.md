@@ -141,9 +141,17 @@ npm run build
 
 ## 🗺️ Roadmap
 
-### v2.1.0 (Current — July 2026)
+### v2.0.0-beta.1 (Current — July 2026)
 
-- ✅ Frameless windows with native title bar overlay on Windows, transparent macOS controls
+- ✅ Glassmorphism design system with translucent surfaces, backdrop blur, depth-based hierarchy
+- ✅ Native window vibrancy (macOS `under-window`, Windows 11 `acrylic`, Linux CSS fallback)
+- ✅ Dark/Light theme switcher in tray menu, synced across all windows
+- ✅ Dynamic accent color detection from HA frontend
+- ✅ Svelte 5 renderer migration (Onboarding, Settings, Error)
+- ✅ Full TypeScript strict mode across main, preload, and renderer
+- ✅ Vitest test framework with 342 unit tests across 22 suites
+- ✅ Playwright E2E tests (28 tests)
+- ✅ Frameless windows with `titleBarOverlay` on Windows, transparent macOS controls
 - ✅ CSS drag regions on all renderer headers for window movement in detached mode
 - ✅ Comprehensive bug sweep — 16 fixes across main, renderer, preload, and IPC
 - ✅ Active window tracker now uses `GetForegroundWindow` (was CPU-based, incorrect)
@@ -157,20 +165,6 @@ npm run build
 - ✅ `node:` prefix for all Node.js built-in imports
 - ✅ Removed dead code (`consecutiveFailures`, unused `renderPins()`)
 - ✅ Shared `INDEX_FILE` constant between `window.ts` and `tray.ts`
-- ✅ 342 unit tests (up from 338)
-
-### v2.0.0 — Liquid Glass Graphical Overhaul (July 2026)
-
-- ✅ Glassmorphism design system with translucent surfaces, backdrop blur, depth-based hierarchy
-- ✅ Native window vibrancy (macOS `under-window`, Windows 11 `acrylic`, Linux CSS fallback)
-- ✅ Dark/Light theme switcher in tray menu, synced across all windows
-- ✅ Dynamic accent color detection from HA frontend
-- ✅ Svelte 5 renderer migration (Onboarding, Settings, Error)
-- ✅ Full TypeScript strict mode across main, preload, and renderer
-- ✅ Vitest test framework with 338 unit tests across 22 suites
-- ✅ Playwright E2E tests (28 tests)
-- ✅ Frameless windows with `titleBarOverlay` on Windows
-- ✅ CSS drag regions for window movement in detached mode
 
 ### v1.7.0 (July 2026)
 
