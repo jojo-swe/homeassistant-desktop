@@ -1,6 +1,5 @@
 import { Tray, Menu, app, screen, shell, dialog, BrowserWindow, type MenuItemConstructorOptions } from 'electron';
 import Positioner from 'electron-traywindow-positioner';
-import logger from 'electron-log';
 import config from './config';
 import * as haClient from './haClient';
 import { INDEX_FILE } from './window';

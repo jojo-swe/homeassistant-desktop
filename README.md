@@ -12,6 +12,7 @@ This fork radically improves application security via context isolation, adds ri
 
 ### Core
 
+- Frameless windows with native title bar overlay on Windows, transparent macOS controls, and CSS drag regions for window movement in detached mode
 - Hover / click the tray icon to open the app (can be fully detached)
 - Supports multiple instances of Home Assistant (including automatic switching)
 - Automatic instance discovery using Bonjour
@@ -132,7 +133,7 @@ npm run build
 | electron-updater   | 6                      |
 | Renderer framework | Svelte 5               |
 | Build tool         | electron-vite 3        |
-| Unit tests         | Vitest (338 tests)     |
+| Unit tests         | Vitest (342 tests)     |
 | E2E tests          | Playwright (28 tests)  |
 | Linter             | ESLint 9 (flat config) |
 | Formatter          | Prettier 3             |
@@ -140,7 +141,38 @@ npm run build
 
 ## 🗺️ Roadmap
 
-### v1.7.0 (Current — July 2026)
+### v2.1.0 (Current — July 2026)
+
+- ✅ Frameless windows with native title bar overlay on Windows, transparent macOS controls
+- ✅ CSS drag regions on all renderer headers for window movement in detached mode
+- ✅ Comprehensive bug sweep — 16 fixes across main, renderer, preload, and IPC
+- ✅ Active window tracker now uses `GetForegroundWindow` (was CPU-based, incorrect)
+- ✅ Bonjour discovery timeout race condition fixed
+- ✅ Auto-updater duplicate event listener stacking fixed
+- ✅ Preload `off()` method exposed for IPC listener cleanup
+- ✅ Resize timeout race fixed (no more hover flicker during resize)
+- ✅ `unregisterKeyboardShortcut` now targets only its own shortcut
+- ✅ Platform-conditional notification icons (macOS/Windows)
+- ✅ Shortcut validation on IPC `save-shortcut` channel
+- ✅ `node:` prefix for all Node.js built-in imports
+- ✅ Removed dead code (`consecutiveFailures`, unused `renderPins()`)
+- ✅ Shared `INDEX_FILE` constant between `window.ts` and `tray.ts`
+- ✅ 342 unit tests (up from 338)
+
+### v2.0.0 — Liquid Glass Graphical Overhaul (July 2026)
+
+- ✅ Glassmorphism design system with translucent surfaces, backdrop blur, depth-based hierarchy
+- ✅ Native window vibrancy (macOS `under-window`, Windows 11 `acrylic`, Linux CSS fallback)
+- ✅ Dark/Light theme switcher in tray menu, synced across all windows
+- ✅ Dynamic accent color detection from HA frontend
+- ✅ Svelte 5 renderer migration (Onboarding, Settings, Error)
+- ✅ Full TypeScript strict mode across main, preload, and renderer
+- ✅ Vitest test framework with 338 unit tests across 22 suites
+- ✅ Playwright E2E tests (28 tests)
+- ✅ Frameless windows with `titleBarOverlay` on Windows
+- ✅ CSS drag regions for window movement in detached mode
+
+### v1.7.0 (July 2026)
 
 - ✅ Dark/light theme toggle on all renderer pages (onboarding, settings, error)
 - ✅ Accessibility audit: ARIA labels, aria-live regions, focus-visible styles, role attributes

@@ -1,5 +1,5 @@
 import { shell } from 'electron';
-import { execFile, exec } from 'child_process';
+import { execFile, exec } from 'node:child_process';
 import logger from 'electron-log';
 import { showNotification } from './notifications';
 
@@ -18,7 +18,7 @@ const HANDLERS: Record<string, CommandHandler> = {
     if (process.platform === 'win32') {
       execFile('rundll32.exe', ['user32.dll,LockWorkStation']);
     } else if (process.platform === 'darwin') {
-      exec('/System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resources/CGSession -suspend || pmset displaysleepnow');
+      exec(String.raw`/System/Library/CoreServices/Menu\ Extras/User.menu/Contents/Resources/CGSession -suspend || pmset displaysleepnow`);
     } else {
       exec('loginctl lock-session');
     }

@@ -1,8 +1,8 @@
 import { Notification, nativeImage } from 'electron';
-import path from 'path';
+import nodePath from 'node:path';
 import logger from 'electron-log';
 
-const ICON_PATH = path.join(
+const ICON_PATH = nodePath.join(
   __dirname,
   '..',
   '..',

@@ -1,5 +1,5 @@
 import { ipcMain, app, dialog } from 'electron';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 import logger from 'electron-log';
 import config from './config';
 import SystemMonitor from './systemMonitor';

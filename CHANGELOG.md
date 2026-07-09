@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-07-09
+
+### Bug Sweep — 16 Fixes
+
+A comprehensive bug sweep across the entire codebase, fixing issues in the main process, renderer/Svelte components, preload/IPC layer, and tests.
+
+### Added
+
+- Frameless windows with native titleBarOverlay on Windows, transparent macOS controls, and CSS drag regions on all renderer headers
+- Preload `off()` method exposed via context bridge for IPC listener cleanup in Svelte components
+- Shortcut validation on IPC `save-shortcut` channel (validates accelerator and entityId fields)
+- macOS lock screen fallback (`pmset displaysleepnow`) for newer macOS versions
+- `node:` prefix for all Node.js built-in imports (child_process, fs, path, os)
+- Shared `INDEX_FILE` constant between `window.ts` and `tray.ts`
+
+### Fixed
+
+- Active window tracker now uses `GetForegroundWindow` P/Invoke instead of CPU-based process sorting
+- Bonjour discovery timeout race condition — previous timeout is now cleared before starting a new find
+- Auto-updater duplicate event listener stacking on repeated `useAutoUpdater` calls
+- Onboarding duplicate `bonjour-instance` listeners — moved outside `get-instances` reply handler
+- Resize timeout race causing `disableHover` flicker — timeout is now tracked and cleared
+- `unregisterKeyboardShortcut` now targets only its own shortcut instead of calling `unregisterAll()`
+- Notification icon is now platform-conditional (macOS IconTemplate vs Windows IconWin)
+- Removed dead `consecutiveFailures` variable from `availabilityChecker.ts`
+- Response error logging now uses `statusCode` instead of stringifying the response object
+- `instances.ts` guards against `indexOf` returning -1 before setting `currentInstance`
+- `reinitMainWindow` removed unused `availabilityCheck` parameter
+- `Onboarding.svelte` `existingInstances` is now reactive with `$state()`
+- Removed redundant `renderPins()` function in `Settings.svelte`
+
+### Changed
+
+- Unit test count increased from 338 to 342
+- Updated tests for updater listener guard and specific shortcut unregister
+
 ## [2.0.0] - 2026-07-09
 
 ### Liquid Glass Graphical Overhaul

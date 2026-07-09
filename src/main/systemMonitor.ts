@@ -1,6 +1,6 @@
-import os from 'os';
+import os from 'node:os';
 import { powerMonitor } from 'electron';
-import { execFile } from 'child_process';
+import { execFile } from 'node:child_process';
 import si from 'systeminformation';
 import type { SystemStats } from './types';
 

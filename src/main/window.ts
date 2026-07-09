@@ -1,8 +1,6 @@
-import { BrowserWindow, shell, screen, globalShortcut } from 'electron';
-import Positioner from 'electron-traywindow-positioner';
+import { BrowserWindow, shell, globalShortcut } from 'electron';
 import logger from 'electron-log';
-import fs from 'fs';
-import path from 'path';
+import nodePath from 'node:path';
 import config from './config';
 import { currentInstance } from './instances';
 import haNotificationBridge from './haNotificationBridge';
@@ -20,9 +18,9 @@ new Promise(resolve => {
   check();
 })`;
 
-export const INDEX_FILE = `file://${path.join(__dirname, '..', 'renderer', 'index.html')}`;
-const ERROR_FILE = `file://${path.join(__dirname, '..', 'renderer', 'error', 'index.html')}`;
-const PRELOAD_PATH = path.join(__dirname, '..', 'preload', 'index.js');
+export const INDEX_FILE = `file://${nodePath.join(__dirname, '..', 'renderer', 'index.html')}`;
+const ERROR_FILE = `file://${nodePath.join(__dirname, '..', 'renderer', 'error', 'index.html')}`;
+const PRELOAD_PATH = nodePath.join(__dirname, '..', 'preload', 'index.js');
 
 let mainWindow: BrowserWindow | null = null;
 let initialized = false;
