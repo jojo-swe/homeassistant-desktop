@@ -16,7 +16,7 @@ const releases = new Map<string, string | undefined>(
       const d = attrs.match(/\bdate="([^"]+)"/)?.[1];
       return [v, d] as [string, string | undefined];
     })
-    .filter(([v, d]) => v && d),
+    .filter(([v, d]) => v && d)
 );
 
 describe('releases', () => {
@@ -25,10 +25,7 @@ describe('releases', () => {
   });
 
   test.skip('every git tag has a matching release entry', () => {
-    const tags = execSync('git tag -l "v*"', { encoding: 'utf8' })
-      .trim()
-      .split('\n')
-      .filter(Boolean);
+    const tags = execSync('git tag -l "v*"', { encoding: 'utf8' }).trim().split('\n').filter(Boolean);
 
     const missing: string[] = [];
     for (const tag of tags) {

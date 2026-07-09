@@ -53,7 +53,10 @@ describe('assets', () => {
     const linuxTargets = (pkg.build.linux?.target || []).map((t: string) => t.toLowerCase());
     const linuxArgsMatch = buildWorkflow.match(/--linux\s+([^"]+?)(?:\s+--|\s*")/);
     if (linuxArgsMatch) {
-      const ciLinuxTargets = linuxArgsMatch[1].trim().split(/\s+/).map((t: string) => t.toLowerCase());
+      const ciLinuxTargets = linuxArgsMatch[1]
+        .trim()
+        .split(/\s+/)
+        .map((t: string) => t.toLowerCase());
       for (const target of linuxTargets) {
         expect(ciLinuxTargets).toContain(target);
       }

@@ -27,7 +27,7 @@ function isConfigured(): boolean {
 async function fetchHA(
   path: string,
   method: string = 'GET',
-  body: Record<string, unknown> | null = null,
+  body: Record<string, unknown> | null = null
 ): Promise<unknown> {
   const { baseUrl, token } = getSettings();
   if (!baseUrl || !token) {

@@ -28,9 +28,7 @@ describe('entityCache', () => {
   });
 
   test('setCachedEntities sets the cache', () => {
-    const entities: HAEntity[] = [
-      { entity_id: 'light.test', name: 'Test Light', state: 'on', domain: 'light' },
-    ];
+    const entities: HAEntity[] = [{ entity_id: 'light.test', name: 'Test Light', state: 'on', domain: 'light' }];
     setCachedEntities(entities);
     expect(getCachedEntities()).toEqual(entities);
   });

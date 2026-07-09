@@ -324,7 +324,9 @@ describe('ipc', () => {
     });
 
     test('replies with entities-loaded when cache is non-empty', () => {
-      vi.mocked(deps.getCachedEntities).mockReturnValue([{ entity_id: 'light.test', name: 'Test', state: 'on', domain: 'light' }]);
+      vi.mocked(deps.getCachedEntities).mockReturnValue([
+        { entity_id: 'light.test', name: 'Test', state: 'on', domain: 'light' },
+      ]);
       const reply = vi.fn();
       registerAll(deps);
       const handler = getHandler('settings-open')!;
@@ -412,7 +414,9 @@ describe('ipc', () => {
 
   describe('get-shortcuts', () => {
     test('returns shortcuts from shortcutManager.load', async () => {
-      vi.mocked(shortcutManager.load).mockReturnValue([{ accelerator: 'Ctrl+Shift+1', entityId: 'light.test', service: 'toggle' }]);
+      vi.mocked(shortcutManager.load).mockReturnValue([
+        { accelerator: 'Ctrl+Shift+1', entityId: 'light.test', service: 'toggle' },
+      ]);
       registerAll(deps);
       const handler = getHandle('get-shortcuts')!;
       const result = await handler({});
@@ -455,11 +459,13 @@ describe('ipc', () => {
         canceled: false,
         filePaths: ['/fake/path.json'],
       } as any);
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
-        haBaseUrl: 'http://ha.local:8123',
-        haToken: 'abc123',
-        pinnedEntities: ['light.a'],
-      }));
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({
+          haBaseUrl: 'http://ha.local:8123',
+          haToken: 'abc123',
+          pinnedEntities: ['light.a'],
+        })
+      );
       registerAll(deps);
       const handler = getHandle('import-config')!;
       const result = await handler({});
@@ -487,9 +493,11 @@ describe('ipc', () => {
         canceled: false,
         filePaths: ['/fake/path.json'],
       } as any);
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
-        haBaseUrl: 'not-a-url',
-      }));
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({
+          haBaseUrl: 'not-a-url',
+        })
+      );
       registerAll(deps);
       const handler = getHandle('import-config')!;
       const result = await handler({});
@@ -502,9 +510,11 @@ describe('ipc', () => {
         canceled: false,
         filePaths: ['/fake/path.json'],
       } as any);
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
-        haToken: 12345,
-      }));
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({
+          haToken: 12345,
+        })
+      );
       registerAll(deps);
       const handler = getHandle('import-config')!;
       const result = await handler({});
@@ -517,9 +527,11 @@ describe('ipc', () => {
         canceled: false,
         filePaths: ['/fake/path.json'],
       } as any);
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
-        pinnedEntities: 'not-an-array',
-      }));
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({
+          pinnedEntities: 'not-an-array',
+        })
+      );
       registerAll(deps);
       const handler = getHandle('import-config')!;
       const result = await handler({});

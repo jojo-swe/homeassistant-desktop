@@ -80,7 +80,7 @@ describe('haClient', () => {
           headers: expect.objectContaining({
             Authorization: 'Bearer test-token',
           }),
-        }),
+        })
       );
     });
 
@@ -141,7 +141,7 @@ describe('haClient', () => {
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ entity_id: 'light.living_room' }),
-        }),
+        })
       );
     });
   });
@@ -159,17 +159,14 @@ describe('haClient', () => {
           headers: expect.objectContaining({
             Authorization: 'Bearer custom-token',
           }),
-        }),
+        })
       );
     });
 
     test('strips trailing slash from URL', async () => {
       fetchMock.mockResolvedValueOnce({ ok: true, json: async () => [] });
       await haClient.getStatesWithCredentials('http://custom:8123/', 'token');
-      expect(fetchMock).toHaveBeenCalledWith(
-        'http://custom:8123/api/states',
-        expect.anything(),
-      );
+      expect(fetchMock).toHaveBeenCalledWith('http://custom:8123/api/states', expect.anything());
     });
 
     test('returns null on 401 response', async () => {

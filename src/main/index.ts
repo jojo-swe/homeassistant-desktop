@@ -86,7 +86,9 @@ async function initializeApp(): Promise<void> {
   });
 
   if (config.get('shortcutEnabled')) windowManager.registerKeyboardShortcut();
-  const fullscreenRegistered = globalShortcut.register('CommandOrControl+Alt+Return', () => windowManager.toggleFullScreen());
+  const fullscreenRegistered = globalShortcut.register('CommandOrControl+Alt+Return', () =>
+    windowManager.toggleFullScreen()
+  );
   if (!fullscreenRegistered) {
     logger.warn('Failed to register fullscreen shortcut (CommandOrControl+Alt+Return) — may be in use by another app.');
   }
@@ -101,9 +103,12 @@ async function initializeApp(): Promise<void> {
   entityCacheInterval = setInterval(refreshEntityCache, 60 * 1000);
 }
 
-app.whenReady().then(initializeApp).catch((err) => {
-  logger.error('Failed to initialize application:', err);
-});
+app
+  .whenReady()
+  .then(initializeApp)
+  .catch((err) => {
+    logger.error('Failed to initialize application:', err);
+  });
 
 app.on('will-quit', () => {
   windowManager.unregisterKeyboardShortcut();

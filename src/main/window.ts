@@ -71,7 +71,7 @@ async function createMainWindow(show = false): Promise<void> {
   mainWindow.webContents.on('did-finish-load', async () => {
     if (!mainWindow) return;
     await mainWindow.webContents.insertCSS(
-      '::-webkit-scrollbar { display: none; } body { -webkit-user-select: none; }',
+      '::-webkit-scrollbar { display: none; } body { -webkit-user-select: none; }'
     );
 
     if (config.get('detachedMode') && process.platform === 'darwin') {
@@ -213,11 +213,15 @@ async function showError(isError: boolean): Promise<void> {
   if (isNavigating) return;
   if (!isError && mainWindow.webContents.getURL().includes('renderer/error')) {
     isNavigating = true;
-    await mainWindow.loadURL(INDEX_FILE).finally(() => { isNavigating = false; });
+    await mainWindow.loadURL(INDEX_FILE).finally(() => {
+      isNavigating = false;
+    });
   }
   if (isError && currentInstance() && !mainWindow.webContents.getURL().includes('renderer/error')) {
     isNavigating = true;
-    await mainWindow.loadURL(ERROR_FILE).finally(() => { isNavigating = false; });
+    await mainWindow.loadURL(ERROR_FILE).finally(() => {
+      isNavigating = false;
+    });
   }
 }
 

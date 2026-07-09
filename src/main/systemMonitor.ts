@@ -48,7 +48,7 @@ async function getMediaDeviceStatus(): Promise<MediaDeviceStatus> {
           webcam: cam?.toLowerCase() === 'true',
           microphone: mic?.toLowerCase() === 'true',
         });
-      },
+      }
     );
   });
 }
@@ -62,10 +62,7 @@ class SystemMonitor {
 
     const idleTime = powerMonitor.getSystemIdleTime();
 
-    const [cpu, battery] = await Promise.all([
-      si.currentLoad().catch(() => null),
-      si.battery().catch(() => null),
-    ]);
+    const [cpu, battery] = await Promise.all([si.currentLoad().catch(() => null), si.battery().catch(() => null)]);
 
     const mediaStatus = await getMediaDeviceStatus();
 

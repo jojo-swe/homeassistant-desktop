@@ -108,7 +108,7 @@ describe('window', () => {
           changePosition: vi.fn(),
           toggleFullScreen: vi.fn(),
           forceQuit: vi.fn(() => false),
-        }),
+        })
       ).not.toThrow();
     });
   });
@@ -139,9 +139,7 @@ describe('window', () => {
     });
 
     test('loads error page when index fails to load', async () => {
-      mockBrowserWindow.loadURL
-        .mockRejectedValueOnce(new Error('not found'))
-        .mockResolvedValueOnce(undefined);
+      mockBrowserWindow.loadURL.mockRejectedValueOnce(new Error('not found')).mockResolvedValueOnce(undefined);
       await windowManager.createMainWindow(false);
       expect(mockBrowserWindow.loadURL).toHaveBeenCalledTimes(2);
     });

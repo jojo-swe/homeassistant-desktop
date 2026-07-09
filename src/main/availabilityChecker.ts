@@ -68,10 +68,8 @@ function checkForAvailableInstance(): void {
   bonjour.find({ type: 'home-assistant' }, (instance) => {
     const internalUrl = instance.txt?.internal_url;
     const externalUrl = instance.txt?.external_url;
-    if (internalUrl && instances.indexOf(internalUrl) !== -1)
-      return currentInstance(internalUrl);
-    if (externalUrl && instances.indexOf(externalUrl) !== -1)
-      return currentInstance(externalUrl);
+    if (internalUrl && instances.indexOf(internalUrl) !== -1) return currentInstance(internalUrl);
+    if (externalUrl && instances.indexOf(externalUrl) !== -1) return currentInstance(externalUrl);
   });
 
   const otherInstances = instances.filter((e) => e !== currentInstance());
@@ -92,8 +90,8 @@ function checkForAvailableInstance(): void {
           });
           request.on('error', () => resolve(null));
           request.end();
-        }),
-    ),
+        })
+    )
   ).then((results) => {
     const found = results.find((r) => r !== null);
     if (found) currentInstance(found);

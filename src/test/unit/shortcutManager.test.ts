@@ -106,7 +106,9 @@ describe('shortcutManager', () => {
     });
 
     test('unregisters the removed shortcut', () => {
-      vi.mocked(config.get).mockReturnValue([{ accelerator: 'Ctrl+Shift+1', entityId: 'light.a', service: 'toggle' }] as Shortcut[]);
+      vi.mocked(config.get).mockReturnValue([
+        { accelerator: 'Ctrl+Shift+1', entityId: 'light.a', service: 'toggle' },
+      ] as Shortcut[]);
       shortcutManager.remove('Ctrl+Shift+1');
       expect(globalShortcut.unregister).toHaveBeenCalledWith('Ctrl+Shift+1');
     });
@@ -115,12 +117,16 @@ describe('shortcutManager', () => {
       vi.mocked(globalShortcut.unregister).mockImplementationOnce(() => {
         throw new Error('not registered');
       });
-      vi.mocked(config.get).mockReturnValue([{ accelerator: 'Ctrl+Shift+1', entityId: 'light.a', service: 'toggle' }] as Shortcut[]);
+      vi.mocked(config.get).mockReturnValue([
+        { accelerator: 'Ctrl+Shift+1', entityId: 'light.a', service: 'toggle' },
+      ] as Shortcut[]);
       expect(() => shortcutManager.remove('Ctrl+Shift+1')).not.toThrow();
     });
 
     test('re-registers remaining shortcuts after removal', () => {
-      vi.mocked(config.get).mockReturnValue([{ accelerator: 'Ctrl+Shift+1', entityId: 'light.a', service: 'toggle' }] as Shortcut[]);
+      vi.mocked(config.get).mockReturnValue([
+        { accelerator: 'Ctrl+Shift+1', entityId: 'light.a', service: 'toggle' },
+      ] as Shortcut[]);
       shortcutManager.remove('Ctrl+Shift+1');
       expect(globalShortcut.register).toHaveBeenCalled();
     });
@@ -160,9 +166,7 @@ describe('shortcutManager', () => {
     });
 
     test('uses default service when service is not specified', () => {
-      vi.mocked(config.get).mockReturnValue([
-        { accelerator: 'Ctrl+Shift+1', entityId: 'light.test' },
-      ] as Shortcut[]);
+      vi.mocked(config.get).mockReturnValue([{ accelerator: 'Ctrl+Shift+1', entityId: 'light.test' }] as Shortcut[]);
       shortcutManager.registerAll();
       expect(globalShortcut.register).toHaveBeenCalledWith('Ctrl+Shift+1', expect.any(Function));
     });

@@ -32,12 +32,10 @@ describe('systemMonitor', () => {
     test('returns all system stats on win32', async () => {
       const original = process.platform;
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
-      vi.mocked(execFile).mockImplementation(
-        ((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
-          cb(null, 'True|False', '');
-          return undefined as any;
-        }) as any,
-      );
+      vi.mocked(execFile).mockImplementation(((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
+        cb(null, 'True|False', '');
+        return undefined as any;
+      }) as any);
 
       const stats = await SystemMonitor.getStats();
 
@@ -90,12 +88,10 @@ describe('systemMonitor', () => {
     test('handles execFile error for media status', async () => {
       const original = process.platform;
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
-      vi.mocked(execFile).mockImplementation(
-        ((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
-          cb(new Error('powershell failed'), '', '');
-          return undefined as any;
-        }) as any,
-      );
+      vi.mocked(execFile).mockImplementation(((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
+        cb(new Error('powershell failed'), '', '');
+        return undefined as any;
+      }) as any);
 
       const stats = await SystemMonitor.getStats();
 

@@ -6,23 +6,14 @@ const outDir = path.join(__dirname, '..', 'assets');
 
 async function generate() {
   // Generate favicon.png (32x32)
-  await sharp(svgPath)
-    .resize(32, 32)
-    .png()
-    .toFile(path.join(outDir, 'favicon.png'));
+  await sharp(svgPath).resize(32, 32).png().toFile(path.join(outDir, 'favicon.png'));
   console.log('Generated favicon.png (32x32)');
 
   // Generate IconWin.png (16x16) and IconWin@2x.png (32x32)
-  await sharp(svgPath)
-    .resize(16, 16)
-    .png()
-    .toFile(path.join(outDir, 'IconWin.png'));
+  await sharp(svgPath).resize(16, 16).png().toFile(path.join(outDir, 'IconWin.png'));
   console.log('Generated IconWin.png (16x16)');
 
-  await sharp(svgPath)
-    .resize(32, 32)
-    .png()
-    .toFile(path.join(outDir, 'IconWin@2x.png'));
+  await sharp(svgPath).resize(32, 32).png().toFile(path.join(outDir, 'IconWin@2x.png'));
   console.log('Generated IconWin@2x.png (32x32)');
 
   // Generate macOS template icons (monochrome)
@@ -33,23 +24,14 @@ async function generate() {
     </svg>`
   );
 
-  await sharp(templateSvg)
-    .resize(16, 16)
-    .png()
-    .toFile(path.join(outDir, 'IconTemplate.png'));
+  await sharp(templateSvg).resize(16, 16).png().toFile(path.join(outDir, 'IconTemplate.png'));
   console.log('Generated IconTemplate.png (16x16)');
 
-  await sharp(templateSvg)
-    .resize(32, 32)
-    .png()
-    .toFile(path.join(outDir, 'IconTemplate@2x.png'));
+  await sharp(templateSvg).resize(32, 32).png().toFile(path.join(outDir, 'IconTemplate@2x.png'));
   console.log('Generated IconTemplate@2x.png (32x32)');
 
   // Generate large icon for packaging (512x512)
-  await sharp(svgPath)
-    .resize(512, 512)
-    .png()
-    .toFile(path.join(outDir, 'icon.png'));
+  await sharp(svgPath).resize(512, 512).png().toFile(path.join(outDir, 'icon.png'));
   console.log('Generated icon.png (512x512)');
 
   console.log('All icons generated successfully.');

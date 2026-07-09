@@ -80,19 +80,22 @@ import type { TrayInitDeps } from '../../main/types';
 
 function createDeps(): TrayInitDeps {
   return {
-    getMainWindow: vi.fn(() => ({
-      getBounds: vi.fn(() => ({ x: 0, y: 0, width: 420, height: 460 })),
-      getPosition: vi.fn(() => [0, 0]),
-      getSize: vi.fn(() => [420, 460]),
-      setPosition: vi.fn(),
-      hide: vi.fn(),
-      show: vi.fn(),
-      isVisible: vi.fn(() => false),
-      loadURL: vi.fn().mockResolvedValue(undefined),
-      isAlwaysOnTop: vi.fn(() => false),
-      setAlwaysOnTop: vi.fn(),
-      webContents: { session: { clearCache: vi.fn(), clearStorageData: vi.fn() } },
-    }) as any),
+    getMainWindow: vi.fn(
+      () =>
+        ({
+          getBounds: vi.fn(() => ({ x: 0, y: 0, width: 420, height: 460 })),
+          getPosition: vi.fn(() => [0, 0]),
+          getSize: vi.fn(() => [420, 460]),
+          setPosition: vi.fn(),
+          hide: vi.fn(),
+          show: vi.fn(),
+          isVisible: vi.fn(() => false),
+          loadURL: vi.fn().mockResolvedValue(undefined),
+          isAlwaysOnTop: vi.fn(() => false),
+          setAlwaysOnTop: vi.fn(),
+          webContents: { session: { clearCache: vi.fn(), clearStorageData: vi.fn() } },
+        }) as any
+    ),
     showWindow: vi.fn(),
     toggleFullScreen: vi.fn(),
     openSettingsWindow: vi.fn(),
@@ -207,7 +210,9 @@ describe('tray', () => {
       vi.mocked(config.has).mockReturnValue(true);
       getMenu();
       const template = vi.mocked(Menu.buildFromTemplate).mock.calls.at(-1)![0] as any[];
-      const instanceItems = template.filter((item: any) => item.label === 'http://ha1.local' || item.label === 'http://ha2.local');
+      const instanceItems = template.filter(
+        (item: any) => item.label === 'http://ha1.local' || item.label === 'http://ha2.local'
+      );
       expect(instanceItems).toHaveLength(2);
     });
 
@@ -246,9 +251,7 @@ describe('tray', () => {
       const template = vi.mocked(Menu.buildFromTemplate).mock.calls.at(-1)![0] as any[];
       const quickActionMenu = template.find((item: any) => item.label === '⚡ Quick Actions');
       const submenu = (quickActionMenu as any).submenu as any[];
-      const noEntitiesItem = submenu.find((item: any) =>
-        item.label?.includes('No entities pinned'),
-      );
+      const noEntitiesItem = submenu.find((item: any) => item.label?.includes('No entities pinned'));
       expect(noEntitiesItem).toBeDefined();
     });
 
@@ -621,7 +624,12 @@ describe('tray', () => {
         isVisible: vi.fn(() => false),
         isAlwaysOnTop: vi.fn(() => false),
         setAlwaysOnTop: vi.fn(),
-        webContents: { session: { clearCache: vi.fn().mockResolvedValue(undefined), clearStorageData: vi.fn().mockResolvedValue(undefined) } },
+        webContents: {
+          session: {
+            clearCache: vi.fn().mockResolvedValue(undefined),
+            clearStorageData: vi.fn().mockResolvedValue(undefined),
+          },
+        },
       };
       vi.mocked(deps.getMainWindow).mockReturnValue(mockWindow as any);
       vi.mocked(config.get).mockImplementation((key: string) => {
@@ -698,7 +706,9 @@ describe('tray', () => {
       vi.mocked(deps.getMainWindow).mockReturnValue(mockWindow as any);
       const store: Record<string, unknown> = { stayOnTop: true };
       vi.mocked(config.get).mockImplementation((key: string) => store[key] as any);
-      vi.mocked(config.set).mockImplementation((key: string, val: unknown) => { store[key] = val; });
+      vi.mocked(config.set).mockImplementation((key: string, val: unknown) => {
+        store[key] = val;
+      });
       vi.mocked(config.has).mockReturnValue(false);
       createTray(deps);
       getMenu();

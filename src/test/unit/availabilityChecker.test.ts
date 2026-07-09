@@ -186,29 +186,20 @@ describe('availabilityChecker', () => {
     });
 
     test('makes requests for other instances', () => {
-      vi.mocked(config.get).mockReturnValue([
-        'http://ha.local:8123',
-        'http://ha.remote:8123',
-      ]);
+      vi.mocked(config.get).mockReturnValue(['http://ha.local:8123', 'http://ha.remote:8123']);
       vi.mocked(currentInstance).mockReturnValue('http://ha.local:8123');
       availabilityChecker['checkForAvailableInstance']();
       expect(net.request).toHaveBeenCalled();
     });
 
     test('handles invalid URL gracefully without throwing', () => {
-      vi.mocked(config.get).mockReturnValue([
-        'http://ha.local:8123',
-        'not-a-url',
-      ]);
+      vi.mocked(config.get).mockReturnValue(['http://ha.local:8123', 'not-a-url']);
       vi.mocked(currentInstance).mockReturnValue('http://ha.local:8123');
       expect(() => availabilityChecker['checkForAvailableInstance']()).not.toThrow();
     });
 
     test('sets currentInstance when a remote instance responds 200', async () => {
-      vi.mocked(config.get).mockReturnValue([
-        'http://ha.local:8123',
-        'http://ha.remote:8123',
-      ]);
+      vi.mocked(config.get).mockReturnValue(['http://ha.local:8123', 'http://ha.remote:8123']);
       vi.mocked(currentInstance).mockReturnValue('http://ha.local:8123');
       const handlers: Record<string, (...args: any[]) => void> = {};
       vi.mocked(net.request).mockReturnValue({
@@ -225,10 +216,7 @@ describe('availabilityChecker', () => {
     });
 
     test('does not set currentInstance when all remote instances fail', async () => {
-      vi.mocked(config.get).mockReturnValue([
-        'http://ha.local:8123',
-        'http://ha.remote:8123',
-      ]);
+      vi.mocked(config.get).mockReturnValue(['http://ha.local:8123', 'http://ha.remote:8123']);
       vi.mocked(currentInstance).mockReturnValue('http://ha.local:8123');
       const handlers: Record<string, (...args: any[]) => void> = {};
       vi.mocked(net.request).mockReturnValue({

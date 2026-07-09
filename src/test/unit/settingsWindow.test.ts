@@ -40,9 +40,9 @@ describe('settingsWindow', () => {
     openSettingsWindow();
     const win = getSettingsWindow();
     expect(win).toBeDefined();
-    const closedHandler = vi.mocked(BrowserWindow).mock.results[0].value.on.mock.calls.find(
-      (c: any[]) => c[0] === 'closed',
-    )?.[1];
+    const closedHandler = vi
+      .mocked(BrowserWindow)
+      .mock.results[0].value.on.mock.calls.find((c: any[]) => c[0] === 'closed')?.[1];
     expect(closedHandler).toBeDefined();
     closedHandler();
     expect(getSettingsWindow()).toBeNull();

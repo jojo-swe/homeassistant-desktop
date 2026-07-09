@@ -47,15 +47,19 @@ function registerAll(deps: IpcRegisterDeps): void {
 
   ipcMain.on('start-bonjour', (event) => {
     if (bonjourFind) bonjourFind.stop();
-    bonjourFind = (bonjour as { find: (opts: Record<string, unknown>, cb: (instance: { txt: { internal_url: string; external_url: string } }) => void) => { stop: () => void } }).find(
-      { type: 'home-assistant' },
-      (instance) => {
-        event.reply('bonjour-instance', {
-          internal_url: instance.txt.internal_url,
-          external_url: instance.txt.external_url,
-        });
-      },
-    );
+    bonjourFind = (
+      bonjour as {
+        find: (
+          opts: Record<string, unknown>,
+          cb: (instance: { txt: { internal_url: string; external_url: string } }) => void
+        ) => { stop: () => void };
+      }
+    ).find({ type: 'home-assistant' }, (instance) => {
+      event.reply('bonjour-instance', {
+        internal_url: instance.txt.internal_url,
+        external_url: instance.txt.external_url,
+      });
+    });
     setTimeout(() => {
       if (bonjourFind) {
         bonjourFind.stop();
@@ -68,9 +72,12 @@ function registerAll(deps: IpcRegisterDeps): void {
     showNotification(title, message, () => showWindow());
   });
 
-  ipcMain.on('desktop-command', (_event, { command, payload }: { command: string; payload: Record<string, unknown> }) => {
-    executeCommand(command, payload);
-  });
+  ipcMain.on(
+    'desktop-command',
+    (_event, { command, payload }: { command: string; payload: Record<string, unknown> }) => {
+      executeCommand(command, payload);
+    }
+  );
 
   ipcMain.handle('get-system-stats', async () => {
     return SystemMonitor.getStats();
@@ -209,7 +216,11 @@ function registerAll(deps: IpcRegisterDeps): void {
         if (typeof data.haBaseUrl !== 'string') {
           return { ok: false, error: 'Invalid haBaseUrl: expected string.' };
         }
-        try { new URL(data.haBaseUrl); } catch { return { ok: false, error: 'Invalid haBaseUrl: not a valid URL.' }; }
+        try {
+          new URL(data.haBaseUrl);
+        } catch {
+          return { ok: false, error: 'Invalid haBaseUrl: not a valid URL.' };
+        }
       }
       if (data.haToken !== undefined && typeof data.haToken !== 'string') {
         return { ok: false, error: 'Invalid haToken: expected string.' };
@@ -225,9 +236,17 @@ function registerAll(deps: IpcRegisterDeps): void {
       }
 
       const keys = [
-        'haBaseUrl', 'haToken', 'pinnedEntities', 'shortcuts',
-        'allInstances', 'automaticSwitching', 'detachedMode',
-        'disableHover', 'stayOnTop', 'shortcutEnabled', 'autoUpdate',
+        'haBaseUrl',
+        'haToken',
+        'pinnedEntities',
+        'shortcuts',
+        'allInstances',
+        'automaticSwitching',
+        'detachedMode',
+        'disableHover',
+        'stayOnTop',
+        'shortcutEnabled',
+        'autoUpdate',
       ];
       for (const key of keys) {
         if (data[key] !== undefined) config.set(key, data[key]);

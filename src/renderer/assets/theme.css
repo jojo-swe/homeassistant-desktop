@@ -15,7 +15,7 @@
 
   /* Glass-specific variables */
   --glass-bg: rgba(37, 37, 56, 0.55);
-  --glass-bg-hover: rgba(53, 53, 80, 0.50);
+  --glass-bg-hover: rgba(53, 53, 80, 0.5);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-border-hover: rgba(255, 255, 255, 0.15);
   --glass-blur: 20px;
@@ -23,7 +23,7 @@
   --glass-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
   /* Elevation shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.20);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
   --shadow-glow: 0 0 24px rgba(41, 182, 246, 0.15);
@@ -58,15 +58,15 @@
   --surface3: rgba(233, 236, 239, 0.68);
 
   --glass-bg: rgba(255, 255, 255, 0.55);
-  --glass-bg-hover: rgba(255, 255, 255, 0.70);
+  --glass-bg-hover: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(0, 0, 0, 0.06);
   --glass-border-hover: rgba(0, 0, 0, 0.12);
-  --glass-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.50);
+  --glass-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
-  --shadow-glow: 0 0 24px rgba(2, 136, 209, 0.10);
+  --shadow-glow: 0 0 24px rgba(2, 136, 209, 0.1);
 
   --text: #212529;
   --text-muted: #6c757d;
@@ -104,9 +104,7 @@ body {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border: 1px solid var(--glass-border);
-  box-shadow:
-    var(--shadow),
-    var(--glass-inner-glow);
+  box-shadow: var(--shadow), var(--glass-inner-glow);
   border-radius: var(--radius-lg);
   transition:
     background var(--transition),
@@ -122,9 +120,7 @@ body {
   backdrop-filter: blur(calc(var(--glass-blur) * 1.5)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.5)) saturate(var(--glass-saturate));
   border: 1px solid var(--glass-border);
-  box-shadow:
-    var(--shadow-lg),
-    var(--glass-inner-glow);
+  box-shadow: var(--shadow-lg), var(--glass-inner-glow);
   border-radius: var(--radius-xl);
 }
 
@@ -234,9 +230,7 @@ body {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   padding: 16px;
-  box-shadow:
-    var(--shadow),
-    var(--glass-inner-glow);
+  box-shadow: var(--shadow), var(--glass-inner-glow);
 }
 
 /* ── Sections ───────────────────────────────────────────────────────────────── */

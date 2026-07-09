@@ -33,15 +33,12 @@ function getActiveWindow(): Promise<ActiveWindowInfo> {
           process_name: parts[0] || null,
           window_title: parts[1] || null,
         });
-      },
+      }
     );
   });
 }
 
-function startTracking(
-  onChange: (info: ActiveWindowInfo) => void,
-  intervalMs: number = 2000,
-): void {
+function startTracking(onChange: (info: ActiveWindowInfo) => void, intervalMs: number = 2000): void {
   if (pollInterval) return;
 
   pollInterval = setInterval(async () => {

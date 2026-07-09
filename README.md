@@ -15,7 +15,7 @@ This fork radically improves application security via context isolation, adds ri
 - Hover / click the tray icon to open the app (can be fully detached)
 - Supports multiple instances of Home Assistant (including automatic switching)
 - Automatic instance discovery using Bonjour
-- Right-click context menu for Quick Actions, settings, reset, or quit
+- Right-click context menu on all platforms (Windows, macOS, Linux) for Quick Actions, theme switcher, settings, reset, or quit
 - Global OS keyboard shortcut (`Cmd/Ctrl + Alt + X`) can be enabled to show/hide the app instantly from anywhere
 - Fullscreen mode (`Cmd/Ctrl + Alt + Return`)
 - Automatic updates via GitHub Releases
@@ -57,7 +57,7 @@ Your PC securely listens for `desktop_command` events from Home Assistant. Remot
 
 ### Theming & Accessibility
 
-- **Dark / Light Theme Toggle** — Switch between dark and light themes on any page (onboarding, settings, error); preference persists across sessions via `localStorage`
+- **Dark / Light Theme Switcher** — Toggle between dark and light themes from the tray menu (🎨 Theme → Dark/Light) or any renderer page (onboarding, settings, error); preference persists across sessions via `electron-store` and `localStorage`, synced across all open windows
 - **Accessibility** — ARIA labels on all interactive elements, `aria-live` regions for dynamic feedback, keyboard-visible focus rings, `role="alert"` on error states, `role="search"` on entity filter
 - **Modern Color Palette** — Updated dark and light theme colors with improved contrast ratios and consistent CSS variables (`--shadow`, `--transition`, `--ha-blue-light`)
 - **Refreshed App Icons** — New SVG source icon with generated PNGs for all platforms (tray, favicon, 512px master)
@@ -114,19 +114,19 @@ npm run build
 
 ### Tech Stack
 
-| Component          | Version                  |
-| ------------------ | ------------------------ |
-| Electron           | 43                       |
-| Node.js            | ≥ 20                     |
-| electron-builder   | 26                       |
-| electron-updater   | 6                        |
-| Renderer framework | Svelte 5                 |
-| Build tool         | electron-vite 3          |
-| Unit tests         | Vitest (333 tests)       |
-| E2E tests          | Playwright (28 tests)    |
-| Linter             | ESLint 9 (flat config)   |
-| Formatter          | Prettier 3               |
-| Language           | TypeScript (strict)      |
+| Component          | Version                |
+| ------------------ | ---------------------- |
+| Electron           | 43                     |
+| Node.js            | ≥ 20                   |
+| electron-builder   | 26                     |
+| electron-updater   | 6                      |
+| Renderer framework | Svelte 5               |
+| Build tool         | electron-vite 3        |
+| Unit tests         | Vitest (336 tests)     |
+| E2E tests          | Playwright (28 tests)  |
+| Linter             | ESLint 9 (flat config) |
+| Formatter          | Prettier 3             |
+| Language           | TypeScript (strict)    |
 
 ## 🗺️ Roadmap
 
@@ -158,10 +158,13 @@ Inspired by the "Liquid Glass" design language from iOS 26 — translucent, laye
 - **Glassmorphism foundation** — Translucent surfaces, `backdrop-filter: blur(20px)`, inner glow shadows, elevation levels ✅
 - **Redesign all UI pages** — Onboarding, settings, and error pages with glass cards, frosted inputs, and animated transitions ✅
 - **Native window vibrancy** — macOS `vibrancy: 'under-window'`, Windows 11 `backgroundMaterial: 'acrylic'`, Linux CSS fallback ✅
+- **Tray context menu on all platforms** — Right-click works on Windows, macOS, and Linux (was Linux-only) ✅
+- **Theme switcher in tray menu** — 🎨 Theme submenu with Dark/Light radio options, persisted in `electron-store`, synced across all windows ✅
 - **Packaging & distribution** — Unsigned builds, portable Windows executable, non-one-click NSIS installer ✅
 - **Dynamic accent color** — Detect HA theme color via `/api/config` and apply throughout the app
 - **Animated transitions** — Fade+scale page transitions, stagger fade-ins, `prefers-reduced-motion` support ✅
 - **TypeScript migration** — Type-safe codebase ✅ (completed in v1.6.0)
+- **Legacy cleanup** — Removed pre-migration `.js` source files, old `web/` directory, legacy `tests/` folder, and unused CSS ✅
 
 See the full roadmap in [CHANGELOG.md](./CHANGELOG.md) for release history.
 

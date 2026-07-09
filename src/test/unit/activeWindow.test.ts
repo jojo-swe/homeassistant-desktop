@@ -32,12 +32,10 @@ describe('activeWindow', () => {
     test('parses powershell output correctly on win32', async () => {
       const original = process.platform;
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
-      vi.mocked(execFile).mockImplementation(
-        ((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
-          cb(null, 'chrome|Google - Search', '');
-          return undefined as any;
-        }) as any,
-      );
+      vi.mocked(execFile).mockImplementation(((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
+        cb(null, 'chrome|Google - Search', '');
+        return undefined as any;
+      }) as any);
       const result = await getActiveWindow();
       expect(result).toEqual({ process_name: 'chrome', window_title: 'Google - Search' });
       Object.defineProperty(process, 'platform', { value: original, configurable: true });
@@ -46,12 +44,10 @@ describe('activeWindow', () => {
     test('returns nulls on execFile error', async () => {
       const original = process.platform;
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
-      vi.mocked(execFile).mockImplementation(
-        ((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
-          cb(new Error('failed'), '', '');
-          return undefined as any;
-        }) as any,
-      );
+      vi.mocked(execFile).mockImplementation(((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
+        cb(new Error('failed'), '', '');
+        return undefined as any;
+      }) as any);
       const result = await getActiveWindow();
       expect(result).toEqual({ process_name: null, window_title: null });
       Object.defineProperty(process, 'platform', { value: original, configurable: true });
@@ -60,12 +56,10 @@ describe('activeWindow', () => {
     test('handles empty output', async () => {
       const original = process.platform;
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
-      vi.mocked(execFile).mockImplementation(
-        ((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
-          cb(null, '|', '');
-          return undefined as any;
-        }) as any,
-      );
+      vi.mocked(execFile).mockImplementation(((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
+        cb(null, '|', '');
+        return undefined as any;
+      }) as any);
       const result = await getActiveWindow();
       expect(result).toEqual({ process_name: null, window_title: null });
       Object.defineProperty(process, 'platform', { value: original, configurable: true });
@@ -83,12 +77,10 @@ describe('activeWindow', () => {
     test('calls onChange when window changes', async () => {
       const original = process.platform;
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
-      vi.mocked(execFile).mockImplementation(
-        ((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
-          cb(null, 'chrome|Google - Search', '');
-          return undefined as any;
-        }) as any,
-      );
+      vi.mocked(execFile).mockImplementation(((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
+        cb(null, 'chrome|Google - Search', '');
+        return undefined as any;
+      }) as any);
       const onChange = vi.fn();
       vi.useFakeTimers();
       startTracking(onChange, 100);
@@ -102,13 +94,13 @@ describe('activeWindow', () => {
     test('catches errors from onChange callback', async () => {
       const original = process.platform;
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
-      vi.mocked(execFile).mockImplementation(
-        ((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
-          cb(null, 'code|Test', '');
-          return undefined as any;
-        }) as any,
-      );
-      const onChange = vi.fn(() => { throw new Error('callback failed'); });
+      vi.mocked(execFile).mockImplementation(((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
+        cb(null, 'code|Test', '');
+        return undefined as any;
+      }) as any);
+      const onChange = vi.fn(() => {
+        throw new Error('callback failed');
+      });
       vi.useFakeTimers();
       startTracking(onChange, 100);
       await vi.advanceTimersByTimeAsync(150);
@@ -122,13 +114,11 @@ describe('activeWindow', () => {
       const original = process.platform;
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
       let callCount = 0;
-      vi.mocked(execFile).mockImplementation(
-        ((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
-          callCount++;
-          cb(null, 'chrome|Same Title', '');
-          return undefined as any;
-        }) as any,
-      );
+      vi.mocked(execFile).mockImplementation(((_cmd: string, _args: string[], _opts: unknown, cb: any) => {
+        callCount++;
+        cb(null, 'chrome|Same Title', '');
+        return undefined as any;
+      }) as any);
       const onChange = vi.fn();
       vi.useFakeTimers();
       startTracking(onChange, 100);

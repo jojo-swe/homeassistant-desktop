@@ -5,7 +5,10 @@ import SystemMonitor from './systemMonitor';
 import { getActiveWindow, startTracking } from './activeWindow';
 import type { ActiveWindowInfo, EntityAttributes, SystemStats } from './types';
 
-const HOSTNAME = os.hostname().toLowerCase().replace(/[^a-z0-9]/g, '_');
+const HOSTNAME = os
+  .hostname()
+  .toLowerCase()
+  .replace(/[^a-z0-9]/g, '_');
 
 const ENTITY_IDS = {
   cpu: `sensor.desktop_${HOSTNAME}_cpu_load`,
@@ -146,7 +149,9 @@ function _startSensors(intervalMs: number): void {
       await pushActiveWindow(windowInfo);
     }, 3000);
   } else {
-    getActiveWindow().then(pushActiveWindow).catch(() => {});
+    getActiveWindow()
+      .then(pushActiveWindow)
+      .catch(() => {});
   }
 }
 

@@ -249,9 +249,7 @@ describe('sensorPusher', () => {
 
       await sensorPusher.pushAllSensors();
       expect(fetchMock).toHaveBeenCalled();
-      const batteryCall = fetchMock.mock.calls.find(
-        (c) => typeof c[0] === 'string' && c[0].includes('battery'),
-      );
+      const batteryCall = fetchMock.mock.calls.find((c) => typeof c[0] === 'string' && c[0].includes('battery'));
       expect(batteryCall).toBeDefined();
     });
   });
@@ -288,9 +286,7 @@ describe('sensorPusher', () => {
         hostname: 'test',
         platform: 'linux',
       });
-      fetchMock
-        .mockResolvedValueOnce({ ok: false, status: 500 })
-        .mockResolvedValueOnce({ ok: true });
+      fetchMock.mockResolvedValueOnce({ ok: false, status: 500 }).mockResolvedValueOnce({ ok: true });
 
       await sensorPusher.pushAllSensors();
       expect(fetchMock.mock.calls.length).toBeGreaterThan(5);
@@ -349,7 +345,7 @@ describe('sensorPusher', () => {
       await trackingCb({ process_name: 'chrome', window_title: 'Test' });
       await vi.waitFor(() => {
         const activeWindowCall = fetchMock.mock.calls.find(
-          (c) => typeof c[0] === 'string' && c[0].includes('active_window'),
+          (c) => typeof c[0] === 'string' && c[0].includes('active_window')
         );
         expect(activeWindowCall).toBeDefined();
       });
@@ -383,7 +379,7 @@ describe('sensorPusher', () => {
       await vi.waitFor(() => expect(getActiveWindow).toHaveBeenCalled());
       await vi.waitFor(() => {
         const activeWindowCall = fetchMock.mock.calls.find(
-          (c) => typeof c[0] === 'string' && c[0].includes('active_window'),
+          (c) => typeof c[0] === 'string' && c[0].includes('active_window')
         );
         expect(activeWindowCall).toBeDefined();
       });

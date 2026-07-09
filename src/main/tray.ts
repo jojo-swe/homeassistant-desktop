@@ -56,7 +56,7 @@ function changePosition(): void {
       mainWindow.setPosition(
         displayWorkArea.width - windowBounds.width + displayWorkArea.x,
         y + (taskBarPosition === 'bottom' ? displayWorkArea.y : 0),
-        false,
+        false
       );
     }
   } else {
@@ -152,7 +152,7 @@ function getMenu(): Menu {
         enabled: allInstances.length > 1,
         checked: config.get('automaticSwitching'),
         click: () => config.set('automaticSwitching', !config.get('automaticSwitching')),
-      },
+      }
     );
   } else {
     instancesMenu.push({ label: 'Not Connected...', enabled: false });
@@ -366,9 +366,10 @@ function applyThemeToAllWindows(theme: 'dark' | 'light'): void {
   const windows = [mainWindow, ...BrowserWindow.getAllWindows().filter((w) => w !== mainWindow)];
   for (const win of windows) {
     if (!win || win.isDestroyed()) continue;
-    const code = theme === 'light'
-      ? "document.documentElement.setAttribute('data-theme', 'light'); localStorage.setItem('settings-theme', 'light');"
-      : "document.documentElement.removeAttribute('data-theme'); localStorage.setItem('settings-theme', 'dark');";
+    const code =
+      theme === 'light'
+        ? "document.documentElement.setAttribute('data-theme', 'light'); localStorage.setItem('settings-theme', 'light');"
+        : "document.documentElement.removeAttribute('data-theme'); localStorage.setItem('settings-theme', 'dark');";
     win.webContents.executeJavaScript(code).catch(() => {});
   }
 }

@@ -33,9 +33,9 @@ const HANDLERS: Record<string, CommandHandler> = {
           '-NoProfile',
           '-NonInteractive',
           '-Command',
-          "Add-type -assembly \"System.Windows.Forms\" | Out-Null; [System.Windows.Forms.Application]::SetSuspendState('Suspend', $false, $false)",
+          'Add-type -assembly "System.Windows.Forms" | Out-Null; [System.Windows.Forms.Application]::SetSuspendState(\'Suspend\', $false, $false)',
         ],
-        { timeout: 5000 },
+        { timeout: 5000 }
       );
     } else if (process.platform === 'darwin') {
       exec('pmset sleepnow');
@@ -49,8 +49,13 @@ const HANDLERS: Record<string, CommandHandler> = {
     if (process.platform === 'win32') {
       execFile(
         'powershell',
-        ['-NoProfile', '-NonInteractive', '-Command', '$obj = New-Object -ComObject WScript.Shell; $obj.SendKeys([char]173)'],
-        { timeout: 3000 },
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          '$obj = New-Object -ComObject WScript.Shell; $obj.SendKeys([char]173)',
+        ],
+        { timeout: 3000 }
       );
     } else if (process.platform === 'darwin') {
       exec('osascript -e "set volume with output muted"');
@@ -64,8 +69,13 @@ const HANDLERS: Record<string, CommandHandler> = {
     if (process.platform === 'win32') {
       execFile(
         'powershell',
-        ['-NoProfile', '-NonInteractive', '-Command', '$obj = New-Object -ComObject WScript.Shell; $obj.SendKeys([char]173)'],
-        { timeout: 3000 },
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          '$obj = New-Object -ComObject WScript.Shell; $obj.SendKeys([char]173)',
+        ],
+        { timeout: 3000 }
       );
     } else if (process.platform === 'darwin') {
       exec('osascript -e "set volume without output muted"');
