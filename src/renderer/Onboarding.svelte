@@ -147,7 +147,7 @@
     <img src="../assets/favicon.png" alt="Home Assistant Logo" />
     <h1>Home Assistant</h1>
     <div class="header-actions">
-      <button class="icon-btn" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
+      <button class="icon-btn glass" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
         {isLightTheme ? '🌙' : '☀️'}
       </button>
     </div>
@@ -160,7 +160,7 @@
       <div class="discovery-title">Discovered Instances</div>
       <div id="availableInstances">
         {#each discoveredInstances as instanceUrl}
-          <button class="instance-btn" onclick={() => addInstance(instanceUrl)} aria-label="Connect to {instanceUrl}">{instanceUrl}</button>
+          <button class="instance-btn glass" onclick={() => addInstance(instanceUrl)} aria-label="Connect to {instanceUrl}">{instanceUrl}</button>
         {/each}
       </div>
     </div>
@@ -181,7 +181,7 @@
   {/if}
 
   {#if showForm}
-    <div class="url-form">
+    <div class="url-form glass">
       <input
         type="url"
         required
@@ -218,17 +218,10 @@
     margin-left: auto;
   }
   .icon-btn {
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
     color: var(--text);
     cursor: pointer;
     font-size: 16px;
     padding: 4px 10px;
-    transition: background var(--transition);
-  }
-  .icon-btn:hover {
-    background: var(--surface3);
   }
   .header img {
     width: 32px;
@@ -250,21 +243,27 @@
     flex-direction: column;
     gap: 12px;
     width: 320px;
+    padding: 20px;
   }
   .url-form input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.5));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.5));
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius);
     color: var(--text);
     font-family: inherit;
     font-size: 14px;
     padding: 12px 14px;
     outline: none;
-    transition: border-color var(--transition);
+    transition:
+      border-color var(--transition),
+      box-shadow var(--transition);
     width: 100%;
   }
   .url-form input:focus {
     border-color: var(--ha-blue);
+    box-shadow: 0 0 0 3px var(--ha-blue-light);
   }
   .url-form input.is-invalid {
     border-color: var(--danger);
@@ -297,16 +296,12 @@
   .instance-btn {
     display: block;
     width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
     color: var(--text);
     font-family: inherit;
     font-size: 13px;
     padding: 10px 14px;
     cursor: pointer;
     margin-bottom: 6px;
-    transition: border-color var(--transition);
     text-align: left;
   }
   .instance-btn:hover {

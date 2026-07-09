@@ -48,6 +48,9 @@ async function createMainWindow(show = false): Promise<void> {
     skipTaskbar: !show,
     autoHideMenuBar: true,
     frame: config.get('detachedMode') && process.platform !== 'darwin',
+    transparent: process.platform === 'darwin',
+    vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
+    backgroundMaterial: process.platform === 'win32' ? 'acrylic' : undefined,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

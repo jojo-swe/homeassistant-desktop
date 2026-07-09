@@ -20,6 +20,9 @@ function openSettingsWindow(): void {
     autoHideMenuBar: true,
     resizable: true,
     skipTaskbar: false,
+    transparent: process.platform === 'darwin',
+    vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
+    backgroundMaterial: process.platform === 'win32' ? 'acrylic' : undefined,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

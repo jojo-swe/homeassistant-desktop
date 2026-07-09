@@ -32,10 +32,10 @@
 </script>
 
 <div class="container">
-  <button class="theme-toggle" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
+  <button class="theme-toggle glass" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
     {isLightTheme ? '🌙' : '☀️'}
   </button>
-  <div class="error-card" role="alert">
+  <div class="error-card glass-elevated" role="alert">
     <div class="error-icon">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <line x1="6" y1="6" x2="18" y2="18" />
@@ -68,32 +68,23 @@
     position: absolute;
     top: 16px;
     right: 16px;
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
     color: var(--text);
     cursor: pointer;
     font-size: 16px;
     padding: 4px 10px;
-    transition: background var(--transition);
-  }
-  .theme-toggle:hover {
-    background: var(--surface3);
   }
   .error-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 16px;
     padding: 40px 32px;
     text-align: center;
     max-width: 360px;
-    box-shadow: var(--shadow);
   }
   .error-icon {
     width: 56px;
     height: 56px;
     border-radius: 50%;
     background: rgba(239, 83, 80, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;

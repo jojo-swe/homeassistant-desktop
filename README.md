@@ -122,7 +122,7 @@ npm run build
 | electron-updater   | 6                        |
 | Renderer framework | Svelte 5                 |
 | Build tool         | electron-vite 3          |
-| Unit tests         | Vitest (291 tests)       |
+| Unit tests         | Vitest (333 tests)       |
 | E2E tests          | Playwright (28 tests)    |
 | Linter             | ESLint 9 (flat config)   |
 | Formatter          | Prettier 3               |
@@ -151,15 +151,15 @@ npm run build
 - ✅ Electron 43, electron-updater 6, electron-builder 26
 - ✅ Full TypeScript migration (strict mode)
 
-### v2.0.0 — Liquid Glass UI Redesign (Planned)
+### v2.0.0 — Liquid Glass UI Redesign (In Progress)
 
 Inspired by the "Liquid Glass" design language from iOS 26 — translucent, layered surfaces with real-time backdrop blur, light refraction, and depth-based hierarchy.
 
-- **Glassmorphism foundation** — Translucent surfaces, `backdrop-filter: blur(20px)`, inner glow shadows, elevation levels
-- **Redesign all UI pages** — Onboarding, settings, and error pages with glass cards, frosted inputs, and animated transitions
-- **Native window vibrancy** — macOS `vibrancy: 'under-window'`, Windows 11 `backgroundMaterial: 'acrylic'`, Linux CSS fallback
+- **Glassmorphism foundation** — Translucent surfaces, `backdrop-filter: blur(20px)`, inner glow shadows, elevation levels ✅
+- **Redesign all UI pages** — Onboarding, settings, and error pages with glass cards, frosted inputs, and animated transitions ✅
+- **Native window vibrancy** — macOS `vibrancy: 'under-window'`, Windows 11 `backgroundMaterial: 'acrylic'`, Linux CSS fallback ✅
 - **Dynamic accent color** — Detect HA theme color via `/api/config` and apply throughout the app
-- **Animated transitions** — Fade+scale page transitions, stagger fade-ins, `prefers-reduced-motion` support
+- **Animated transitions** — Fade+scale page transitions, stagger fade-ins, `prefers-reduced-motion` support ✅
 - **TypeScript migration** — Type-safe codebase ✅ (completed in v1.6.0)
 
 See the full roadmap in [CHANGELOG.md](./CHANGELOG.md) for release history.

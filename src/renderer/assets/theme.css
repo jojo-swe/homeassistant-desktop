@@ -1,38 +1,79 @@
 /* ── Shared theme for Home Assistant Desktop ────────────────────────────────── */
 /* Used by index.html, error.html, and settings.html                            */
+/* v2.0 "Liquid Glass" UI — glassmorphism foundation                            */
 
 :root {
+  /* Brand colors */
   --ha-blue: #29b6f6;
   --ha-blue-dark: #0288d1;
   --ha-blue-light: rgba(41, 182, 246, 0.15);
+
+  /* Surfaces — translucent for glass effect */
   --surface: #1a1a2e;
-  --surface2: #252538;
-  --surface3: #353550;
+  --surface2: rgba(37, 37, 56, 0.72);
+  --surface3: rgba(53, 53, 80, 0.68);
+
+  /* Glass-specific variables */
+  --glass-bg: rgba(37, 37, 56, 0.55);
+  --glass-bg-hover: rgba(53, 53, 80, 0.50);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(255, 255, 255, 0.15);
+  --glass-blur: 20px;
+  --glass-saturate: 180%;
+  --glass-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  /* Elevation shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.20);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --shadow-glow: 0 0 24px rgba(41, 182, 246, 0.15);
+
+  /* Text */
   --text: #e8e8f0;
   --text-muted: #9090b0;
-  --border: #3d3d5c;
+
+  /* Semantic colors */
+  --border: rgba(255, 255, 255, 0.08);
   --success: #66bb6a;
   --danger: #ef5350;
-  --radius: 10px;
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  /* Shape */
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --transition: 0.2s ease;
+  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Animated gradient background */
+  --bg-gradient: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 40%, #16213e 100%);
 }
 
 [data-theme='light'] {
   --ha-blue: #0288d1;
   --ha-blue-dark: #0277bd;
   --ha-blue-light: rgba(2, 136, 209, 0.12);
-  --surface: #f8f9fa;
-  --surface2: #ffffff;
-  --surface3: #e9ecef;
+
+  --surface: #f0f2f5;
+  --surface2: rgba(255, 255, 255, 0.72);
+  --surface3: rgba(233, 236, 239, 0.68);
+
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-hover: rgba(255, 255, 255, 0.70);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-border-hover: rgba(0, 0, 0, 0.12);
+  --glass-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.50);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 24px rgba(2, 136, 209, 0.10);
+
   --text: #212529;
   --text-muted: #6c757d;
-  --border: #dee2e6;
-  --success: #2e7d32;
-  --danger: #c62828;
-  --radius: 10px;
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --transition: 0.2s ease;
+
+  --border: rgba(0, 0, 0, 0.06);
+
+  --bg-gradient: linear-gradient(135deg, #e8ecf1 0%, #f0f2f5 40%, #dde4ed 100%);
 }
 
 *,
@@ -49,10 +90,42 @@ body {
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
   font-weight: 400;
-  background: var(--surface);
+  background: var(--bg-gradient);
+  background-attachment: fixed;
   color: var(--text);
   height: 100%;
   width: 100%;
+}
+
+/* ── Glass utility classes ──────────────────────────────────────────────────── */
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    var(--shadow),
+    var(--glass-inner-glow);
+  border-radius: var(--radius-lg);
+  transition:
+    background var(--transition),
+    border-color var(--transition),
+    box-shadow var(--transition);
+}
+.glass:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
+}
+.glass-elevated {
+  background: var(--glass-bg);
+  backdrop-filter: blur(calc(var(--glass-blur) * 1.5)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.5)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    var(--shadow-lg),
+    var(--glass-inner-glow);
+  border-radius: var(--radius-xl);
 }
 
 /* ── Buttons ────────────────────────────────────────────────────────────────── */
@@ -86,7 +159,10 @@ body {
   color: #fff;
 }
 .btn-secondary {
-  background: var(--surface3);
+  background: var(--glass-bg);
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.5));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.5));
+  border: 1px solid var(--glass-border);
   color: var(--text);
 }
 .btn-danger {
@@ -109,19 +185,24 @@ body {
   color: var(--text-muted);
 }
 .field input {
-  background: var(--surface2);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.5));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.5));
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   color: var(--text);
   font-family: inherit;
   font-size: 13px;
   padding: 9px 12px;
   outline: none;
-  transition: border-color var(--transition);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
   width: 100%;
 }
 .field input:focus {
   border-color: var(--ha-blue);
+  box-shadow: 0 0 0 3px var(--ha-blue-light);
 }
 .field input::placeholder {
   color: var(--text-muted);
@@ -147,11 +228,15 @@ body {
 /* ── Cards ──────────────────────────────────────────────────────────────────── */
 
 .card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
   padding: 16px;
-  box-shadow: var(--shadow);
+  box-shadow:
+    var(--shadow),
+    var(--glass-inner-glow);
 }
 
 /* ── Sections ───────────────────────────────────────────────────────────────── */
@@ -195,6 +280,18 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: var(--glass-border-hover);
   border-radius: 4px;
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

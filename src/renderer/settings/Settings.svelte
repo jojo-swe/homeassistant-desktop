@@ -246,7 +246,7 @@
     <img src="../assets/favicon.png" alt="Home Assistant" />
     <h1>Settings</h1>
     <div class="header-actions">
-      <button class="icon-btn" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
+      <button class="icon-btn glass" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
         {isLightTheme ? '🌙' : '☀️'}
       </button>
     </div>
@@ -439,17 +439,10 @@
   }
 
   .icon-btn {
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
     color: var(--text);
     cursor: pointer;
     font-size: 16px;
     padding: 4px 10px;
-    transition: background var(--transition);
-  }
-  .icon-btn:hover {
-    background: var(--surface3);
   }
 
   .section-title {
@@ -489,8 +482,10 @@
   }
 
   .entity-list {
-    background: var(--surface2);
-    border: 1px solid var(--border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.5));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.5));
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius);
     max-height: 200px;
     overflow-y: auto;
@@ -512,7 +507,7 @@
     border-bottom: none;
   }
   .entity-item:hover {
-    background: var(--surface3);
+    background: var(--glass-bg-hover);
   }
   .entity-item.pinned {
     border-left: 3px solid var(--ha-blue);
@@ -613,8 +608,8 @@
     color: var(--text-muted);
   }
   .entity-pagination button {
-    background: var(--surface3);
-    border: none;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
     border-radius: 4px;
     color: var(--text);
     cursor: pointer;
@@ -630,10 +625,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: var(--surface2);
+    background: var(--glass-bg);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.5));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.5));
     padding: 8px 12px;
     border-radius: var(--radius);
-    border: 1px solid var(--border);
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
   }
   .shortcut-keys {
@@ -650,9 +647,11 @@
     position: fixed;
     bottom: 20px;
     right: 20px;
-    background: var(--surface3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
     padding: 10px 16px;
     font-size: 12px;
     color: var(--text);
