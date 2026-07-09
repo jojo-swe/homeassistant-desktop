@@ -69,4 +69,36 @@ describe('config', () => {
     config.delete('haBaseUrl');
     expect(config.has('haBaseUrl')).toBe(false);
   });
+
+  test('get returns undefined for non-existent key', () => {
+    expect(config.get('nonexistent_key_xyz')).toBeUndefined();
+  });
+
+  test('set and get round-trips a number', () => {
+    config.set('someNumber', 42);
+    expect(config.get('someNumber')).toBe(42);
+  });
+
+  test('set and get round-trips a boolean', () => {
+    config.set('someBool', true);
+    expect(config.get('someBool')).toBe(true);
+  });
+
+  test('set and get round-trips an array', () => {
+    const arr = ['a', 'b', 'c'];
+    config.set('someArray', arr);
+    expect(config.get('someArray')).toEqual(arr);
+  });
+
+  test('set and get round-trips an object', () => {
+    const obj = { nested: { value: 123 } };
+    config.set('someObject', obj);
+    expect(config.get('someObject')).toEqual(obj);
+  });
+
+  test('set overwrites existing value', () => {
+    config.set('haBaseUrl', 'http://first');
+    config.set('haBaseUrl', 'http://second');
+    expect(config.get('haBaseUrl')).toBe('http://second');
+  });
 });

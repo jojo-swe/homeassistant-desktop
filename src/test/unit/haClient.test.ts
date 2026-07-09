@@ -146,16 +146,95 @@ describe('haClient', () => {
     });
   });
 
-  describe('getState', () => {
-    test('calls the states endpoint for a single entity', async () => {
-      const mockState = { entity_id: 'light.living_room', state: 'on' };
-      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => mockState });
-      const result = await haClient.getState('light.living_room');
-      expect(result).toEqual(mockState);
+  describe('getStatesWithCredentials', () => {
+    test('calls fetch with provided URL and token', async () => {
+      const mockStates = [{ entity_id: 'light.1' }];
+      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => mockStates });
+
+      const result = await haClient.getStatesWithCredentials('http://custom:8123', 'custom-token');
+      expect(result).toEqual(mockStates);
       expect(fetchMock).toHaveBeenCalledWith(
-        'http://ha.local:8123/api/states/light.living_room',
-        expect.objectContaining({ method: 'GET' }),
+        'http://custom:8123/api/states',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer custom-token',
+          }),
+        }),
       );
+    });
+
+    test('strips trailing slash from URL', async () => {
+      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => [] });
+      await haClient.getStatesWithCredentials('http://custom:8123/', 'token');
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://custom:8123/api/states',
+        expect.anything(),
+      );
+    });
+
+    test('returns null on 401 response', async () => {
+      fetchMock.mockResolvedValueOnce({ ok: false, status: 401, statusText: 'Unauthorized' });
+      const result = await haClient.getStatesWithCredentials('http://ha:8123', 'bad-token');
+      expect(result).toBeNull();
+    });
+
+    test('returns null on 500 response', async () => {
+      fetchMock.mockResolvedValueOnce({ ok: false, status: 500, statusText: 'Server Error' });
+      const result = await haClient.getStatesWithCredentials('http://ha:8123', 'token');
+      expect(result).toBeNull();
+    });
+
+    test('returns null on network error', async () => {
+      fetchMock.mockRejectedValueOnce(new Error('Network error'));
+      const result = await haClient.getStatesWithCredentials('http://ha:8123', 'token');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getToggleableEntities edge cases', () => {
+    test('returns empty array when states is empty', async () => {
+      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => [] });
+      const result = await haClient.getToggleableEntities();
+      expect(result).toEqual([]);
+    });
+
+    test('sorts entities by friendly_name', async () => {
+      const mockStates = [
+        { entity_id: 'light.zebra', state: 'off', attributes: { friendly_name: 'Zebra Light' } },
+        { entity_id: 'light.alpha', state: 'on', attributes: { friendly_name: 'Alpha Light' } },
+      ];
+      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => mockStates });
+      const result = await haClient.getToggleableEntities();
+      expect(result[0].name).toBe('Alpha Light');
+      expect(result[1].name).toBe('Zebra Light');
+    });
+  });
+
+  describe('toggle', () => {
+    test('returns null when fetch fails', async () => {
+      fetchMock.mockRejectedValueOnce(new Error('Network error'));
+      const result = await haClient.toggle('light.kitchen');
+      expect(result).toBeNull();
+    });
+
+    test('returns null when response is not ok', async () => {
+      fetchMock.mockResolvedValueOnce({ ok: false, status: 404, statusText: 'Not Found' });
+      const result = await haClient.toggle('light.kitchen');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getState', () => {
+    test('returns null on non-ok response', async () => {
+      fetchMock.mockResolvedValueOnce({ ok: false, status: 404, statusText: 'Not Found' });
+      const result = await haClient.getState('light.nonexistent');
+      expect(result).toBeNull();
+    });
+
+    test('returns null on fetch error', async () => {
+      fetchMock.mockRejectedValueOnce(new Error('Network error'));
+      const result = await haClient.getState('light.kitchen');
+      expect(result).toBeNull();
     });
   });
 });

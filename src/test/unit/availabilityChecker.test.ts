@@ -194,6 +194,56 @@ describe('availabilityChecker', () => {
       availabilityChecker['checkForAvailableInstance']();
       expect(net.request).toHaveBeenCalled();
     });
+
+    test('handles invalid URL gracefully without throwing', () => {
+      vi.mocked(config.get).mockReturnValue([
+        'http://ha.local:8123',
+        'not-a-url',
+      ]);
+      vi.mocked(currentInstance).mockReturnValue('http://ha.local:8123');
+      expect(() => availabilityChecker['checkForAvailableInstance']()).not.toThrow();
+    });
+
+    test('sets currentInstance when a remote instance responds 200', async () => {
+      vi.mocked(config.get).mockReturnValue([
+        'http://ha.local:8123',
+        'http://ha.remote:8123',
+      ]);
+      vi.mocked(currentInstance).mockReturnValue('http://ha.local:8123');
+      const handlers: Record<string, (...args: any[]) => void> = {};
+      vi.mocked(net.request).mockReturnValue({
+        on: vi.fn((event: string, cb: (...args: any[]) => void) => {
+          handlers[event] = cb;
+          return mockRequest;
+        }),
+        end: vi.fn(() => {
+          if (handlers['response']) handlers['response']({ statusCode: 200 });
+        }),
+      } as any);
+      availabilityChecker['checkForAvailableInstance']();
+      await vi.waitFor(() => expect(currentInstance).toHaveBeenCalledWith('http://ha.remote:8123'));
+    });
+
+    test('does not set currentInstance when all remote instances fail', async () => {
+      vi.mocked(config.get).mockReturnValue([
+        'http://ha.local:8123',
+        'http://ha.remote:8123',
+      ]);
+      vi.mocked(currentInstance).mockReturnValue('http://ha.local:8123');
+      const handlers: Record<string, (...args: any[]) => void> = {};
+      vi.mocked(net.request).mockReturnValue({
+        on: vi.fn((event: string, cb: (...args: any[]) => void) => {
+          handlers[event] = cb;
+          return mockRequest;
+        }),
+        end: vi.fn(() => {
+          if (handlers['error']) handlers['error'](new Error('refused'));
+        }),
+      } as any);
+      availabilityChecker['checkForAvailableInstance']();
+      await new Promise((r) => setTimeout(r, 50));
+      expect(currentInstance).not.toHaveBeenCalledWith('http://ha.remote:8123');
+    });
   });
 
   describe('getBonjour', () => {

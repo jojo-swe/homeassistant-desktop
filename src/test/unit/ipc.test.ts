@@ -6,6 +6,10 @@ vi.mock('electron', () => ({
     handle: vi.fn(),
   },
   app: { relaunch: vi.fn(), exit: vi.fn() },
+  dialog: {
+    showOpenDialog: vi.fn(),
+    showSaveDialog: vi.fn(),
+  },
 }));
 
 vi.mock('electron-log', () => ({
@@ -14,6 +18,11 @@ vi.mock('electron-log', () => ({
     warn: vi.fn(),
     error: vi.fn(),
   },
+}));
+
+vi.mock('fs', () => ({
+  readFileSync: vi.fn(),
+  writeFileSync: vi.fn(),
 }));
 
 vi.mock('../../main/config', () => {
@@ -77,7 +86,8 @@ vi.mock('../../main/sensorPusher', () => ({
   pushAllSensors: vi.fn(),
 }));
 
-import { ipcMain, app } from 'electron';
+import { ipcMain, app, dialog } from 'electron';
+import * as fs from 'fs';
 import logger from 'electron-log';
 import config from '../../main/config';
 import SystemMonitor from '../../main/systemMonitor';
@@ -425,6 +435,132 @@ describe('ipc', () => {
       const result = await handler({}, 'Ctrl+Shift+1');
       expect(shortcutManager.remove).toHaveBeenCalledWith('Ctrl+Shift+1');
       expect(result.ok).toBe(true);
+    });
+  });
+
+  describe('import-config', () => {
+    test('returns error when dialog is cancelled', async () => {
+      vi.mocked(dialog.showOpenDialog).mockResolvedValue({ canceled: true, filePaths: [] } as any);
+      registerAll(deps);
+      const handler = getHandle('import-config')!;
+      const result = await handler({});
+      expect(result.ok).toBe(false);
+      expect(result.error).toBe('Cancelled');
+    });
+
+    test('imports valid config successfully', async () => {
+      vi.mocked(dialog.showOpenDialog).mockResolvedValue({
+        canceled: false,
+        filePaths: ['/fake/path.json'],
+      } as any);
+      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
+        haBaseUrl: 'http://ha.local:8123',
+        haToken: 'abc123',
+        pinnedEntities: ['light.a'],
+      }));
+      registerAll(deps);
+      const handler = getHandle('import-config')!;
+      const result = await handler({});
+      expect(result.ok).toBe(true);
+      expect(config.set).toHaveBeenCalledWith('haBaseUrl', 'http://ha.local:8123');
+      expect(config.set).toHaveBeenCalledWith('haToken', 'abc123');
+      expect(config.set).toHaveBeenCalledWith('pinnedEntities', ['light.a']);
+    });
+
+    test('rejects non-object JSON', async () => {
+      vi.mocked(dialog.showOpenDialog).mockResolvedValue({
+        canceled: false,
+        filePaths: ['/fake/path.json'],
+      } as any);
+      vi.mocked(fs.readFileSync).mockReturnValue('"just a string"');
+      registerAll(deps);
+      const handler = getHandle('import-config')!;
+      const result = await handler({});
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('expected JSON object');
+    });
+
+    test('rejects invalid haBaseUrl', async () => {
+      vi.mocked(dialog.showOpenDialog).mockResolvedValue({
+        canceled: false,
+        filePaths: ['/fake/path.json'],
+      } as any);
+      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
+        haBaseUrl: 'not-a-url',
+      }));
+      registerAll(deps);
+      const handler = getHandle('import-config')!;
+      const result = await handler({});
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('not a valid URL');
+    });
+
+    test('rejects non-string haToken', async () => {
+      vi.mocked(dialog.showOpenDialog).mockResolvedValue({
+        canceled: false,
+        filePaths: ['/fake/path.json'],
+      } as any);
+      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
+        haToken: 12345,
+      }));
+      registerAll(deps);
+      const handler = getHandle('import-config')!;
+      const result = await handler({});
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('Invalid haToken');
+    });
+
+    test('rejects non-array pinnedEntities', async () => {
+      vi.mocked(dialog.showOpenDialog).mockResolvedValue({
+        canceled: false,
+        filePaths: ['/fake/path.json'],
+      } as any);
+      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
+        pinnedEntities: 'not-an-array',
+      }));
+      registerAll(deps);
+      const handler = getHandle('import-config')!;
+      const result = await handler({});
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('Invalid pinnedEntities');
+    });
+
+    test('returns error on JSON parse failure', async () => {
+      vi.mocked(dialog.showOpenDialog).mockResolvedValue({
+        canceled: false,
+        filePaths: ['/fake/path.json'],
+      } as any);
+      vi.mocked(fs.readFileSync).mockReturnValue('not valid json{{{');
+      registerAll(deps);
+      const handler = getHandle('import-config')!;
+      const result = await handler({});
+      expect(result.ok).toBe(false);
+    });
+  });
+
+  describe('test-connection edge cases', () => {
+    test('returns error when URL is empty', async () => {
+      registerAll(deps);
+      const handler = getHandle('test-connection')!;
+      const result = await handler({}, { haBaseUrl: '', haToken: 'token' });
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('required');
+    });
+
+    test('returns error when token is empty', async () => {
+      registerAll(deps);
+      const handler = getHandle('test-connection')!;
+      const result = await handler({}, { haBaseUrl: 'http://ha.local', haToken: '' });
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('required');
+    });
+
+    test('returns error for invalid URL format', async () => {
+      registerAll(deps);
+      const handler = getHandle('test-connection')!;
+      const result = await handler({}, { haBaseUrl: 'not-a-url', haToken: 'token' });
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('Invalid URL format');
     });
   });
 });
