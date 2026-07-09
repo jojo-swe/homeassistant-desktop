@@ -19,7 +19,6 @@
 
   <releases>
     <release version="2.0.0-beta.1" date="2026-07-09" />
-    <release version="1.7.0" date="2026-07-07" />
     <release version="1.6.0" date="2026-07-07" />
     <release version="1.5.4" date="2026-03-21" />
   </releases>

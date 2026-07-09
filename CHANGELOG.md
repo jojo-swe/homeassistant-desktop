@@ -16,14 +16,17 @@ A full graphical overhaul introducing a glassmorphism-based design language with
 - **Glassmorphism design system** — Translucent surfaces with `backdrop-filter: blur(20px) saturate(180%)`, inner glow shadows, multi-level elevation, and glass-specific CSS variables
 - **Native window vibrancy** — macOS `vibrancy: 'under-window'`, Windows 11 `backgroundMaterial: 'acrylic'`, Linux CSS-only glassmorphism fallback
 - **Frameless windows** — Native `titleBarOverlay` on Windows, transparent macOS controls, CSS drag regions on all renderer headers
-- **Dark / Light theme switcher** — Tray menu Theme submenu with Dark/Light radio options, persisted in `electron-store`, synced across all open windows
+- **Dark / Light theme switcher** — Tray menu Theme submenu with Dark/Light radio options, persisted in `electron-store`, synced across all open windows; theme toggle on all renderer pages (onboarding, settings, error)
 - **Dynamic accent color** — Automatically detects HA `--primary-color` CSS variable and applies it as `--ha-blue` across all app UI windows
 - **Animated transitions** — Fade+scale page transitions, stagger fade-ins, `prefers-reduced-motion` support
+- **Accessibility improvements** — `aria-label` on all interactive elements, `aria-live` regions for dynamic feedback, `role="alert"` on error card, `role="search"` on entity filter, `role="status"` on discovery section, global `:focus-visible` keyboard navigation styles
 - **Tray context menu on all platforms** — Right-click works on Windows, macOS, and Linux (was Linux-only)
 - **Svelte 5 renderer migration** — Onboarding, Settings, and Error pages rebuilt as Svelte 5 components with Vite bundling
 - **TypeScript strict mode** — Full type-safe codebase across main, preload, and renderer
 - **Vitest test framework** — 342 unit tests across 22 suites
 - **Playwright E2E tests** — 28 end-to-end tests covering error page, theme toggle, and accessibility attributes
+- **App icon refresh** — New SVG source icon, regenerated PNGs for all platforms (favicon, tray icons, 512x512 master), `generate-icons` npm script
+- **Shared CSS utilities** — `.card` and `.section` classes, new CSS variables (`--ha-blue-light`, `--shadow`, `--transition`) in `theme.css`
 - **Preload `off()` method** — Exposed `ipcRenderer.removeListener` via context bridge for IPC listener cleanup
 - **Shortcut validation** — IPC `save-shortcut` handler validates `accelerator` and `entityId` fields
 - **macOS lock screen fallback** — `pmset displaysleepnow` for newer macOS versions
@@ -49,10 +52,13 @@ A full graphical overhaul introducing a glassmorphism-based design language with
 ### Changed
 
 - Redesigned all UI pages (Onboarding, Settings, Error) with glass cards, frosted inputs, and animated transitions
-- Updated color palette with improved contrast ratios and consistent CSS variables
+- Updated dark theme color palette: brighter blue (`#29b6f6`), darker surfaces, improved text contrast
+- Updated light theme color palette: cooler grays, standard color values
+- All hardcoded transition durations replaced with `var(--transition)` for consistency
 - Refreshed app icons — new SVG source with generated PNGs for all platforms
 - CI workflow with xvfb for Linux E2E testing
-- Unit test count increased from 338 to 342
+- ESLint config now ignores `out/` build artifacts and legacy `.js` files
+- Unit test count increased from 291 to 342
 - Updated tests for updater listener guard and specific shortcut unregister
 
 ### Removed
@@ -64,29 +70,6 @@ A full graphical overhaul introducing a glassmorphism-based design language with
 - Unused CSS: `src/renderer/assets/style.css`, `src/renderer/assets/error.css`
 - Dead `consecutiveFailures` variable from `availabilityChecker.ts`
 - Redundant `renderPins()` function from `Settings.svelte`
-
-## [1.7.0] - 2026-07-07
-
-### Added
-
-- Dark/light theme toggle on Onboarding and Error pages, persisted via `localStorage` (shared with Settings)
-- Accessibility improvements: `aria-label` on all interactive elements, `aria-live` regions for dynamic feedback, `role="alert"` on error card, `role="search"` on entity filter, `role="status"` on discovery section
-- Global `:focus-visible` keyboard navigation styles in `theme.css`
-- Playwright E2E test coverage expanded from 12 to 28 tests, including error page tests, theme toggle tests, and accessibility attribute verification
-- New `error.spec.ts` E2E test file for error page rendering and interaction
-- App icon refresh: new SVG source icon, regenerated PNGs for all platforms (favicon, tray icons, 512x512 master icon)
-- `generate-icons` npm script and `scripts/generate-icons.cjs` for icon regeneration from SVG source
-- Shared `.card` and `.section` utility classes in `theme.css`
-- New CSS variables: `--ha-blue-light`, `--shadow`, `--transition`
-
-### Changed
-
-- Updated dark theme color palette: brighter blue (`#29b6f6`), darker surfaces, improved text contrast
-- Updated light theme color palette: cooler grays, standard color values
-- All hardcoded transition durations replaced with `var(--transition)` for consistency
-- Added `box-shadow: var(--shadow)` to error card, entity list, shortcut rows, and toast notification
-- Pin chip background now uses `--ha-blue-light` variable instead of hardcoded rgba
-- ESLint config now ignores `out/` build artifacts and legacy `.js` files
 
 ## [1.6.0] - 2026-07-07
 

@@ -153,6 +153,10 @@ npm run build
 - ✅ Playwright E2E tests (28 tests)
 - ✅ Frameless windows with `titleBarOverlay` on Windows, transparent macOS controls
 - ✅ CSS drag regions on all renderer headers for window movement in detached mode
+- ✅ Accessibility audit: ARIA labels, aria-live regions, focus-visible styles, role attributes
+- ✅ App icon refresh: new SVG source with generated PNGs for all platforms
+- ✅ Shared CSS utilities (`.card`, `.section`) and new CSS variables in `theme.css`
+- ✅ CI workflow with xvfb for Linux E2E testing
 - ✅ Comprehensive bug sweep — 16 fixes across main, renderer, preload, and IPC
 - ✅ Active window tracker now uses `GetForegroundWindow` (was CPU-based, incorrect)
 - ✅ Bonjour discovery timeout race condition fixed
@@ -165,14 +169,6 @@ npm run build
 - ✅ `node:` prefix for all Node.js built-in imports
 - ✅ Removed dead code (`consecutiveFailures`, unused `renderPins()`)
 - ✅ Shared `INDEX_FILE` constant between `window.ts` and `tray.ts`
-
-### v1.7.0 (July 2026)
-
-- ✅ Dark/light theme toggle on all renderer pages (onboarding, settings, error)
-- ✅ Accessibility audit: ARIA labels, aria-live regions, focus-visible styles, role attributes
-- ✅ Branding refresh: modernized color palette, new SVG-based app icons, shared CSS utilities
-- ✅ Expanded E2E test coverage from 12 to 28 tests (error page, theme toggle, a11y attributes)
-- ✅ CI workflow with xvfb for Linux E2E testing
 
 ### v1.6.0 (July 2026)
 
