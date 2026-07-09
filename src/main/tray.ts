@@ -3,6 +3,7 @@ import Positioner from 'electron-traywindow-positioner';
 import logger from 'electron-log';
 import config from './config';
 import * as haClient from './haClient';
+import { INDEX_FILE } from './window';
 import type { HAEntity, TrayInitDeps } from './types';
 
 const ICON_WIN = `${__dirname}/../../assets/IconWin.png`;
@@ -144,7 +145,7 @@ function getMenu(): Menu {
         click: async () => {
           config.delete('currentInstance');
           if (mainWindow) {
-            await mainWindow.loadURL(`file://${__dirname}/../renderer/index.html`);
+            await mainWindow.loadURL(INDEX_FILE);
             mainWindow.show();
           }
         },

@@ -7,7 +7,6 @@ import { currentInstance } from './instances';
 let availabilityCheckerInterval: NodeJS.Timeout | null = null;
 let bonjour: Bonjour | null = null;
 let connected = false;
-let consecutiveFailures = 0;
 let currentDeps: AvailabilityDeps | null = null;
 
 interface AvailabilityDeps {
@@ -58,12 +57,10 @@ function availabilityCheck(deps: AvailabilityDeps): void {
 
   request.on('response', async (response) => {
     if (response.statusCode === 200) {
-      consecutiveFailures = 0;
       setConnected(true);
       await deps.showError(false);
     } else {
-      logger.error('Response error: ' + response);
-      consecutiveFailures++;
+      logger.error(`Response error: ${response.statusCode}`);
       setConnected(false);
       await deps.showError(true);
     }
@@ -71,7 +68,6 @@ function availabilityCheck(deps: AvailabilityDeps): void {
 
   request.on('error', async (error) => {
     logger.error(error);
-    consecutiveFailures++;
     setConnected(false);
     await deps.showError(true);
 

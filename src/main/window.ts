@@ -20,13 +20,14 @@ new Promise(resolve => {
   check();
 })`;
 
-const INDEX_FILE = `file://${path.join(__dirname, '..', 'renderer', 'index.html')}`;
+export const INDEX_FILE = `file://${path.join(__dirname, '..', 'renderer', 'index.html')}`;
 const ERROR_FILE = `file://${path.join(__dirname, '..', 'renderer', 'error', 'index.html')}`;
 const PRELOAD_PATH = path.join(__dirname, '..', 'preload', 'index.js');
 
 let mainWindow: BrowserWindow | null = null;
 let initialized = false;
 let resizeEvent: boolean = false;
+let resizeTimeout: NodeJS.Timeout | null = null;
 let isNavigating = false;
 
 let _showWindow: () => void;
@@ -147,11 +148,13 @@ async function createMainWindow(show = false): Promise<void> {
     if (!config.get('disableHover') || resizeEvent) {
       config.set('disableHover', true);
       resizeEvent = true;
-      setTimeout(() => {
+      if (resizeTimeout) clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
         if (resizeEvent) {
           config.set('disableHover', false);
           resizeEvent = false;
         }
+        resizeTimeout = null;
       }, 600);
     }
 
@@ -192,13 +195,11 @@ async function createMainWindow(show = false): Promise<void> {
   initialized = true;
 }
 
-async function reinitMainWindow(availabilityCheck?: () => void): Promise<void> {
+async function reinitMainWindow(): Promise<void> {
   logger.info('Re-initialized main window');
   mainWindow?.destroy();
   mainWindow = null;
   await createMainWindow(!config.has('currentInstance'));
-
-  if (availabilityCheck) availabilityCheck();
 }
 
 function showWindow(): void {
@@ -236,7 +237,7 @@ function registerKeyboardShortcut(): void {
 }
 
 function unregisterKeyboardShortcut(): void {
-  globalShortcut.unregisterAll();
+  globalShortcut.unregister('CommandOrControl+Alt+X');
 }
 
 async function showError(isError: boolean): Promise<void> {

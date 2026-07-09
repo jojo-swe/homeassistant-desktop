@@ -2,7 +2,13 @@ import { Notification, nativeImage } from 'electron';
 import path from 'path';
 import logger from 'electron-log';
 
-const ICON_PATH = path.join(__dirname, '..', '..', 'assets', 'IconWin.png');
+const ICON_PATH = path.join(
+  __dirname,
+  '..',
+  '..',
+  'assets',
+  process.platform === 'darwin' ? 'IconTemplate.png' : 'IconWin.png'
+);
 
 function showNotification(title: string, message: string, onClick?: () => void): void {
   if (!Notification.isSupported()) {

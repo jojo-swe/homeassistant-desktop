@@ -85,7 +85,10 @@ describe('updater', () => {
         }
         return autoUpdater;
       });
-      await useAutoUpdater(onForceQuit);
+      // Reset module state to allow listener registration
+      vi.resetModules();
+      const { useAutoUpdater: freshUseAutoUpdater } = await import('../../main/updater');
+      await freshUseAutoUpdater(onForceQuit);
       expect(onForceQuit).toHaveBeenCalled();
       expect(autoUpdater.quitAndInstall).toHaveBeenCalled();
     });
@@ -97,7 +100,10 @@ describe('updater', () => {
         }
         return autoUpdater;
       });
-      await useAutoUpdater(() => {});
+      // Reset module state to allow listener registration
+      vi.resetModules();
+      const { useAutoUpdater: freshUseAutoUpdater } = await import('../../main/updater');
+      await freshUseAutoUpdater(() => {});
       expect(logger.error).toHaveBeenCalled();
     });
   });

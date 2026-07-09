@@ -15,7 +15,7 @@
   let discoveredInstances: string[] = $state([]);
   let isLightTheme = $state(false);
 
-  let existingInstances: string[] = [];
+  let existingInstances: string[] = $state([]);
 
   onMount(() => {
     const savedTheme = localStorage.getItem('settings-theme');
@@ -29,17 +29,19 @@
     window.api.send('get-instances');
     window.api.on('get-instances', (result: unknown) => {
       existingInstances = result as string[];
-      window.api.on('bonjour-instance', (instance: unknown) => {
-        const inst = instance as { internal_url?: string; external_url?: string };
-        if (inst.internal_url && existingInstances.indexOf(inst.internal_url) === -1) {
-          showInstance(inst.internal_url);
-        }
-        if (inst.external_url && existingInstances.indexOf(inst.external_url) === -1) {
-          showInstance(inst.external_url);
-        }
-      });
-      window.api.send('start-bonjour');
     });
+
+    window.api.on('bonjour-instance', (instance: unknown) => {
+      const inst = instance as { internal_url?: string; external_url?: string };
+      if (inst.internal_url && existingInstances.indexOf(inst.internal_url) === -1) {
+        showInstance(inst.internal_url);
+      }
+      if (inst.external_url && existingInstances.indexOf(inst.external_url) === -1) {
+        showInstance(inst.external_url);
+      }
+    });
+
+    window.api.send('start-bonjour');
 
     window.api.send('ha-instance');
     window.api.on('ha-instance', (u: unknown) => {

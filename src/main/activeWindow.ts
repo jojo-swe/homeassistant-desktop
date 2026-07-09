@@ -7,9 +7,28 @@ let lastWindowProcess: string | null = null;
 let pollInterval: NodeJS.Timeout | null = null;
 
 const PS_SCRIPT = `
-$procs = Get-Process | Where-Object { $_.MainWindowTitle -ne '' } | Sort-Object CPU -Descending;
-$top = $procs | Select-Object -First 1;
-if ($top) { Write-Output "$($top.Name)|$($top.MainWindowTitle)" } else { Write-Output '|' }
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+public class Win32 {
+  [DllImport("user32.dll")]
+  public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")]
+  public static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
+  [DllImport("user32.dll")]
+  public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+}
+"@
+$hwnd = [Win32]::GetForegroundWindow()
+$sb = New-Object System.Text.StringBuilder(256)
+[Win32]::GetWindowText($hwnd, $sb, 256) | Out-Null
+$title = $sb.ToString()
+$pid = 0
+[Win32]::GetWindowThreadProcessId($hwnd, [ref]$pid) | Out-Null
+$proc = ""
+if ($pid -ne 0) { $p = Get-Process -Id $pid -ErrorAction SilentlyContinue; if ($p) { $proc = $p.Name } }
+Write-Output "$proc|$title"
 `;
 
 function getActiveWindow(): Promise<ActiveWindowInfo> {

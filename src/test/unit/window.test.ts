@@ -43,6 +43,7 @@ vi.mock('electron', () => ({
   screen: { getDisplayNearestPoint: vi.fn() },
   globalShortcut: {
     register: vi.fn(),
+    unregister: vi.fn(),
     unregisterAll: vi.fn(),
   },
 }));
@@ -583,9 +584,9 @@ describe('window', () => {
   });
 
   describe('unregisterKeyboardShortcut', () => {
-    test('unregisters all shortcuts', () => {
+    test('unregisters the keyboard shortcut', () => {
       windowManager.unregisterKeyboardShortcut();
-      expect(globalShortcut.unregisterAll).toHaveBeenCalled();
+      expect(globalShortcut.unregister).toHaveBeenCalledWith('CommandOrControl+Alt+X');
     });
   });
 

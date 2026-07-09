@@ -156,10 +156,6 @@
     currentPage += dir;
   }
 
-  function renderPins(): string[] {
-    return pinnedIds;
-  }
-
   function pinName(id: string): string {
     const entity = allEntities.find((e) => e.entity_id === id);
     return entity?.name || id;
@@ -301,7 +297,7 @@
       {#if pinnedIds.length === 0}
         <span class="empty-state">No entities pinned yet.</span>
       {:else}
-        {#each renderPins() as id, i (id)}
+        {#each pinnedIds as id, i (id)}
           <div
             class="pin-chip"
             class:dragging={dragIndex === i}

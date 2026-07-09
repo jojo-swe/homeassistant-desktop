@@ -18,7 +18,7 @@ const HANDLERS: Record<string, CommandHandler> = {
     if (process.platform === 'win32') {
       execFile('rundll32.exe', ['user32.dll,LockWorkStation']);
     } else if (process.platform === 'darwin') {
-      exec('/System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resources/CGSession -suspend');
+      exec('/System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resources/CGSession -suspend || pmset displaysleepnow');
     } else {
       exec('loginctl lock-session');
     }

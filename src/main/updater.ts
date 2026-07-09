@@ -5,6 +5,7 @@ import config from './config';
 autoUpdater.logger = logger;
 
 let updateCheckerInterval: NodeJS.Timeout | null = null;
+let listenersRegistered = false;
 
 async function checkForUpdates(): Promise<void> {
   try {
@@ -16,16 +17,19 @@ async function checkForUpdates(): Promise<void> {
 }
 
 async function useAutoUpdater(onForceQuit: () => void): Promise<void> {
-  autoUpdater.on('error', (message) => {
-    logger.error('There was a problem updating the application');
-    logger.error(message);
-    if (updateCheckerInterval) clearInterval(updateCheckerInterval);
-  });
+  if (!listenersRegistered) {
+    autoUpdater.on('error', (message) => {
+      logger.error('There was a problem updating the application');
+      logger.error(message);
+      if (updateCheckerInterval) clearInterval(updateCheckerInterval);
+    });
 
-  autoUpdater.on('update-downloaded', () => {
-    onForceQuit();
-    autoUpdater.quitAndInstall();
-  });
+    autoUpdater.on('update-downloaded', () => {
+      onForceQuit();
+      autoUpdater.quitAndInstall();
+    });
+    listenersRegistered = true;
+  }
 
   if (!updateCheckerInterval && config.get('autoUpdate')) {
     updateCheckerInterval = setInterval(checkForUpdates, 1000 * 60 * 60 * 4);

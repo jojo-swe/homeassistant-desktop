@@ -44,9 +44,11 @@ function registerAll(deps: IpcRegisterDeps): void {
   });
 
   let bonjourFind: { stop: () => void } | null = null;
+  let bonjourTimeout: NodeJS.Timeout | null = null;
 
   ipcMain.on('start-bonjour', (event) => {
     if (bonjourFind) bonjourFind.stop();
+    if (bonjourTimeout) clearTimeout(bonjourTimeout);
     bonjourFind = (
       bonjour as {
         find: (
@@ -60,11 +62,12 @@ function registerAll(deps: IpcRegisterDeps): void {
         external_url: instance.txt.external_url,
       });
     });
-    setTimeout(() => {
+    bonjourTimeout = setTimeout(() => {
       if (bonjourFind) {
         bonjourFind.stop();
         bonjourFind = null;
       }
+      bonjourTimeout = null;
     }, 30_000);
   });
 
@@ -159,6 +162,13 @@ function registerAll(deps: IpcRegisterDeps): void {
   });
 
   ipcMain.handle('save-shortcut', async (_event, shortcut) => {
+    if (
+      !shortcut ||
+      typeof shortcut.accelerator !== 'string' ||
+      typeof shortcut.entityId !== 'string'
+    ) {
+      return { ok: false, error: 'Invalid shortcut: accelerator and entityId are required.' };
+    }
     shortcutManager.upsert(shortcut);
     return { ok: true };
   });
