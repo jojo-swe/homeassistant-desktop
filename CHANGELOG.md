@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-07-09
+
+### Liquid Glass Graphical Overhaul
+
+A full graphical overhaul introducing a glassmorphism-based design language with translucent surfaces, real-time backdrop blur, depth-based hierarchy, and adaptive theming.
+
+### Added
+
+- **Glassmorphism design system** — Translucent surfaces with `backdrop-filter: blur(20px) saturate(180%)`, inner glow shadows, multi-level elevation (`--shadow-sm`, `--shadow`, `--shadow-lg`, `--shadow-glow`), and glass-specific CSS variables (`--glass-bg`, `--glass-border`, `--glass-blur`, `--glass-saturate`)
+- **Native window vibrancy** — macOS `vibrancy: 'under-window'`, Windows 11 `backgroundMaterial: 'acrylic'`, Linux CSS-only glassmorphism fallback
+- **Dark / Light theme switcher** — Tray menu 🎨 Theme submenu with Dark/Light radio options, persisted in `electron-store`, synced across all open windows; light theme with distinct glass tints, surface opacities, and border treatments
+- **Dynamic accent color** — Automatically detects HA `--primary-color` CSS variable from the loaded frontend and applies it as `--ha-blue` across all app UI windows; persists across sessions
+- **Animated transitions** — Fade+scale page transitions, stagger fade-ins, `prefers-reduced-motion` support
+- **Tray context menu on all platforms** — Right-click works on Windows, macOS, and Linux (was Linux-only)
+- **Packaging & distribution** — Unsigned builds, portable Windows executable, non-one-click NSIS installer
+- **Svelte 5 renderer migration** — Onboarding, Settings, and Error pages rebuilt as Svelte 5 components with Vite bundling
+- **TypeScript strict mode** — Full type-safe codebase across main, preload, and renderer
+- **Vitest test framework** — 338 unit tests across 22 suites
+- **Playwright E2E tests** — 28 end-to-end tests covering error page, theme toggle, and accessibility attributes
+- **Favicon bundling** — Vite-compatible asset imports with TypeScript declarations for `.png` and `.svg` modules
+
+### Changed
+
+- Redesigned all UI pages (Onboarding, Settings, Error) with glass cards, frosted inputs, and animated transitions
+- Updated color palette with improved contrast ratios and consistent CSS variables
+- Refreshed app icons — new SVG source with generated PNGs for all platforms
+- CI workflow with xvfb for Linux E2E testing
+
+### Removed
+
+- All pre-migration `.js` source files in `src/` (superseded by TypeScript)
+- Legacy `web/` directory (superseded by `src/renderer/` Svelte components)
+- Legacy `tests/` directory (superseded by `src/test/` Vitest suites)
+- Root legacy files: `app.js`, `config.js`, `preload.js`, `jest.config.js`
+- Unused CSS: `src/renderer/assets/style.css`, `src/renderer/assets/error.css`
+
 ## [1.7.0] - 2026-07-07
 
 ### Added

@@ -4,7 +4,7 @@
 
 A modern Desktop App (Windows / macOS / Linux) for [Home Assistant](https://www.home-assistant.io/), built with [Electron](https://www.electronjs.org/) 43.
 
-This fork radically improves application security via context isolation, adds rich two-way native OS integrations, and is under active development with a roadmap toward a **v2.0 "Liquid Glass" UI redesign**.
+This fork radically improves application security via context isolation, adds rich two-way native OS integrations, and ships a **v2.0 "Liquid Glass" graphical overhaul** — translucent, layered surfaces with real-time backdrop blur, depth-based hierarchy, and adaptive theming.
 
 ![Home Assistant - Desktop](https://raw.githubusercontent.com/jojo-swe/homeassistant-desktop/master/media/screenshot.png)
 
@@ -55,13 +55,22 @@ Your PC securely listens for `desktop_command` events from Home Assistant. Remot
 - Test connection button with feedback
 - Export / import configuration
 
-### Theming & Accessibility
+### Liquid Glass Design System
 
-- **Dark / Light Theme Switcher** — Toggle between dark and light themes from the tray menu (🎨 Theme → Dark/Light) or any renderer page (onboarding, settings, error); preference persists across sessions via `electron-store` and `localStorage`, synced across all open windows
+The v2.0 graphical overhaul introduces a glassmorphism-based design language inspired by Apple's "Liquid Glass" aesthetic:
+
+- **Translucent Layered Surfaces** — `backdrop-filter: blur(20px) saturate(180%)` creates frosted-glass panels that blur and tint the content behind them in real time
+- **Depth & Elevation** — Multi-level shadow system (`--shadow-sm`, `--shadow`, `--shadow-lg`, `--shadow-glow`) with inner glow highlights (`inset 0 1px 0 rgba(255,255,255,0.06)`) for a physical sense of layering
+- **Native Window Vibrancy** — On macOS the window itself uses `vibrancy: 'under-window'` for true system-level backdrop blur; on Windows 11 it uses `backgroundMaterial: 'acrylic'`; Linux falls back to CSS-only glassmorphism
+- **Adaptive Theming** — Dark and light themes with distinct glass tints, surface opacities, and border treatments; toggle from the tray menu (🎨 Theme → Dark/Light) or any renderer page, persisted via `electron-store` and synced across all open windows
 - **Dynamic Accent Color** — Automatically detects the Home Assistant `--primary-color` CSS variable from the loaded HA frontend and applies it as `--ha-blue` across all app UI windows; persists across sessions
-- **Accessibility** — ARIA labels on all interactive elements, `aria-live` regions for dynamic feedback, keyboard-visible focus rings, `role="alert"` on error states, `role="search"` on entity filter
-- **Modern Color Palette** — Updated dark and light theme colors with improved contrast ratios and consistent CSS variables (`--shadow`, `--transition`, `--ha-blue-light`)
+- **Animated Transitions** — Fade+scale page transitions, stagger fade-ins, and `prefers-reduced-motion` support for accessibility
 - **Refreshed App Icons** — New SVG source icon with generated PNGs for all platforms (tray, favicon, 512px master)
+
+### Accessibility
+
+- ARIA labels on all interactive elements, `aria-live` regions for dynamic feedback, keyboard-visible focus rings, `role="alert"` on error states, `role="search"` on entity filter
+- Modern color palette with improved contrast ratios and consistent CSS variables (`--shadow`, `--transition`, `--ha-blue-light`)
 
 ### Security
 
@@ -152,22 +161,22 @@ npm run build
 - ✅ Electron 43, electron-updater 6, electron-builder 26
 - ✅ Full TypeScript migration (strict mode)
 
-### v2.0.0 — Liquid Glass UI Redesign (In Progress)
+### v2.0.0 — Liquid Glass Graphical Overhaul (Complete)
 
-Inspired by the "Liquid Glass" design language from iOS 26 — translucent, layered surfaces with real-time backdrop blur, light refraction, and depth-based hierarchy.
+A full graphical overhaul introducing a glassmorphism-based design language with translucent surfaces, real-time backdrop blur, depth-based hierarchy, and adaptive theming.
 
 - **Glassmorphism foundation** — Translucent surfaces, `backdrop-filter: blur(20px)`, inner glow shadows, elevation levels ✅
 - **Redesign all UI pages** — Onboarding, settings, and error pages with glass cards, frosted inputs, and animated transitions ✅
 - **Native window vibrancy** — macOS `vibrancy: 'under-window'`, Windows 11 `backgroundMaterial: 'acrylic'`, Linux CSS fallback ✅
 - **Tray context menu on all platforms** — Right-click works on Windows, macOS, and Linux (was Linux-only) ✅
 - **Theme switcher in tray menu** — 🎨 Theme submenu with Dark/Light radio options, persisted in `electron-store`, synced across all windows ✅
-- **Packaging & distribution** — Unsigned builds, portable Windows executable, non-one-click NSIS installer ✅
-- **Dynamic accent color** — Detect HA theme color via `--primary-color` CSS variable and apply throughout the app ✅
+- **Dynamic accent color** — Detect HA `--primary-color` CSS variable and apply throughout the app ✅
 - **Animated transitions** — Fade+scale page transitions, stagger fade-ins, `prefers-reduced-motion` support ✅
+- **Packaging & distribution** — Unsigned builds, portable Windows executable, non-one-click NSIS installer ✅
 - **TypeScript migration** — Type-safe codebase ✅ (completed in v1.6.0)
 - **Legacy cleanup** — Removed pre-migration `.js` source files, old `web/` directory, legacy `tests/` folder, and unused CSS ✅
 
-See the full roadmap in [CHANGELOG.md](./CHANGELOG.md) for release history.
+See [CHANGELOG.md](./CHANGELOG.md) for full release history.
 
 ## 🤝 Contributing
 
