@@ -93,6 +93,7 @@ function registerAll(deps: IpcRegisterDeps): void {
       haBaseUrl: config.get('haBaseUrl'),
       haToken: config.get('haToken'),
       pinnedEntities: config.get('pinnedEntities') || [],
+      theme: config.get('theme') || 'dark',
     });
     const entities = getCachedEntities();
     if (entities.length) event.reply('entities-loaded', entities);

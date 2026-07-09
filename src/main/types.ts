@@ -55,6 +55,7 @@ export interface AppConfig {
   haToken: string;
   pinnedEntities: string[];
   shortcuts: Shortcut[];
+  theme?: 'dark' | 'light';
   currentInstance?: number;
   windowSize?: [number, number];
   windowSizeDetached?: [number, number];

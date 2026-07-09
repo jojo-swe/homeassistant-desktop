@@ -15,6 +15,7 @@ const store = new Store<AppConfig>({
     haToken: '',
     pinnedEntities: [],
     shortcuts: [] as Shortcut[],
+    theme: 'dark' as 'dark' | 'light',
   },
 });
 

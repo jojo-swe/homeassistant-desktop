@@ -308,6 +308,7 @@ describe('ipc', () => {
         if (key === 'haBaseUrl') return 'http://ha.local';
         if (key === 'haToken') return 'token';
         if (key === 'pinnedEntities') return ['light.test'];
+        if (key === 'theme') return 'dark';
         return undefined;
       });
       const reply = vi.fn();
@@ -318,6 +319,7 @@ describe('ipc', () => {
         haBaseUrl: 'http://ha.local',
         haToken: 'token',
         pinnedEntities: ['light.test'],
+        theme: 'dark',
       });
     });
 

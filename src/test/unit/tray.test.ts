@@ -29,6 +29,9 @@ vi.mock('electron', () => ({
   dialog: {
     showMessageBox: vi.fn().mockResolvedValue({ response: 2 }),
   },
+  BrowserWindow: {
+    getAllWindows: vi.fn(() => []),
+  },
 }));
 
 vi.mock('electron-traywindow-positioner', () => ({
@@ -127,6 +130,14 @@ describe('tray', () => {
       expect(mockTray.on).toHaveBeenCalledWith('click', expect.any(Function));
       Object.defineProperty(process, 'platform', { value: original, configurable: true });
     });
+
+    test('sets context menu on all platforms', () => {
+      const original = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      createTray(deps);
+      expect(mockTray.setContextMenu).toHaveBeenCalled();
+      Object.defineProperty(process, 'platform', { value: original, configurable: true });
+    });
   });
 
   describe('getTray', () => {
@@ -154,6 +165,22 @@ describe('tray', () => {
       const template = vi.mocked(Menu.buildFromTemplate).mock.calls.at(-1)![0] as any[];
       const statusItem = template.find((item: any) => item.label?.includes('Not Connected'));
       expect(statusItem).toBeDefined();
+    });
+
+    test('includes theme submenu with Dark and Light options', () => {
+      vi.mocked(config.get).mockImplementation((key: string) => {
+        if (key === 'allInstances') return [];
+        if (key === 'theme') return 'dark';
+        return undefined;
+      });
+      getMenu();
+      const template = vi.mocked(Menu.buildFromTemplate).mock.calls.at(-1)![0] as any[];
+      const themeItem = template.find((item: any) => item.label === '🎨 Theme');
+      expect(themeItem).toBeDefined();
+      expect(themeItem.submenu).toBeDefined();
+      const themeLabels = themeItem.submenu.map((item: any) => item.label);
+      expect(themeLabels).toContain('Dark');
+      expect(themeLabels).toContain('Light');
     });
 
     test('shows connected status when HA is configured', () => {

@@ -49,10 +49,19 @@
       document.documentElement.setAttribute('data-theme', 'light');
     }
     window.api.on('settings-loaded', (settings: unknown) => {
-      const s = settings as Settings;
+      const s = settings as Settings & { theme?: 'dark' | 'light' };
       haUrl = s.haBaseUrl || '';
       haToken = s.haToken || '';
       pinnedIds = s.pinnedEntities || [];
+      if (s.theme === 'light') {
+        isLightTheme = true;
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('settings-theme', 'light');
+      } else {
+        isLightTheme = false;
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('settings-theme', 'dark');
+      }
       loadShortcuts();
     });
 

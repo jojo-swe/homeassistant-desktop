@@ -1,4 +1,4 @@
-import { Tray, Menu, app, screen, shell, dialog, type BrowserWindow, type MenuItemConstructorOptions } from 'electron';
+import { Tray, Menu, app, screen, shell, dialog, BrowserWindow, type MenuItemConstructorOptions } from 'electron';
 import Positioner from 'electron-traywindow-positioner';
 import logger from 'electron-log';
 import config from './config';
@@ -262,6 +262,30 @@ function getMenu(): Menu {
       click: () => _toggleFullScreen(),
     },
     { type: 'separator' },
+    {
+      label: '🎨 Theme',
+      submenu: [
+        {
+          label: 'Dark',
+          type: 'radio',
+          checked: config.get('theme') !== 'light',
+          click: () => {
+            config.set('theme', 'dark');
+            applyThemeToAllWindows('dark');
+          },
+        },
+        {
+          label: 'Light',
+          type: 'radio',
+          checked: config.get('theme') === 'light',
+          click: () => {
+            config.set('theme', 'light');
+            applyThemeToAllWindows('light');
+          },
+        },
+      ],
+    },
+    { type: 'separator' },
     { label: `v${app.getVersion()}`, enabled: false },
     {
       label: 'Automatic Updates',
@@ -337,10 +361,23 @@ function getMenu(): Menu {
   ]);
 }
 
+function applyThemeToAllWindows(theme: 'dark' | 'light'): void {
+  const mainWindow = _getMainWindow();
+  const windows = [mainWindow, ...BrowserWindow.getAllWindows().filter((w) => w !== mainWindow)];
+  for (const win of windows) {
+    if (!win || win.isDestroyed()) continue;
+    const code = theme === 'light'
+      ? "document.documentElement.setAttribute('data-theme', 'light'); localStorage.setItem('settings-theme', 'light');"
+      : "document.documentElement.removeAttribute('data-theme'); localStorage.setItem('settings-theme', 'dark');";
+    win.webContents.executeJavaScript(code).catch(() => {});
+  }
+}
+
 function createTray(deps: TrayInitDeps): void {
   init(deps);
   tray = new Tray(process.platform === 'darwin' ? ICON_MAC : ICON_WIN);
   tray.setToolTip('Home Assistant Desktop');
+  tray.setContextMenu(getMenu());
   if (process.platform !== 'linux') {
     tray.on('click', () => _showWindow());
   }
