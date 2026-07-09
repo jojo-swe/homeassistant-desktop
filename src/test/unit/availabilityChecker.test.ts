@@ -129,9 +129,21 @@ describe('availabilityChecker', () => {
       await vi.waitFor(() => expect(showError).toHaveBeenCalledWith(true));
     });
 
-    test('calls showError on request error and clears interval', async () => {
+    test('calls showError(false) on 200 response and sets connected', async () => {
       vi.mocked(currentInstance).mockReturnValue('http://ha.local:8123');
       const showError = vi.fn().mockResolvedValue(undefined);
+      const onStatusChange = vi.fn();
+      availabilityChecker.init({ showError, onStatusChange });
+      availabilityChecker['availabilityCheck']({ showError, onStatusChange });
+      await vi.waitFor(() => expect(showError).toHaveBeenCalledWith(false));
+      expect(availabilityChecker.isConnected()).toBe(true);
+      expect(onStatusChange).toHaveBeenCalledWith(true);
+    });
+
+    test('calls showError on request error but keeps interval running', async () => {
+      vi.mocked(currentInstance).mockReturnValue('http://ha.local:8123');
+      const showError = vi.fn().mockResolvedValue(undefined);
+      const onStatusChange = vi.fn();
       const handlers: Record<string, (...args: any[]) => void> = {};
       vi.mocked(net.request).mockReturnValue({
         on: vi.fn((event: string, cb: (...args: any[]) => void) => {
@@ -142,9 +154,13 @@ describe('availabilityChecker', () => {
           if (handlers['error']) handlers['error'](new Error('connection refused'));
         }),
       } as any);
-      availabilityChecker.init({ showError });
-      availabilityChecker['availabilityCheck']({ showError });
+      availabilityChecker.init({ showError, onStatusChange });
+      availabilityChecker['availabilityCheck']({ showError, onStatusChange });
       await vi.waitFor(() => expect(showError).toHaveBeenCalledWith(true));
+      expect(availabilityChecker.isConnected()).toBe(false);
+      expect(onStatusChange).toHaveBeenCalledWith(false);
+      // Interval should still be running — init() should not log "Initialized" again
+      expect(logger.info).toHaveBeenCalledTimes(1);
     });
 
     test('triggers checkForAvailableInstance on error when automaticSwitching is enabled', async () => {
@@ -155,6 +171,7 @@ describe('availabilityChecker', () => {
         return undefined;
       });
       const showError = vi.fn().mockResolvedValue(undefined);
+      const onStatusChange = vi.fn();
       const handlers: Record<string, (...args: any[]) => void> = {};
       vi.mocked(net.request).mockReturnValue({
         on: vi.fn((event: string, cb: (...args: any[]) => void) => {
@@ -165,8 +182,8 @@ describe('availabilityChecker', () => {
           if (handlers['error']) handlers['error'](new Error('connection refused'));
         }),
       } as any);
-      availabilityChecker.init({ showError });
-      availabilityChecker['availabilityCheck']({ showError });
+      availabilityChecker.init({ showError, onStatusChange });
+      availabilityChecker['availabilityCheck']({ showError, onStatusChange });
       await vi.waitFor(() => expect(config.get).toHaveBeenCalledWith('automaticSwitching'));
     });
   });

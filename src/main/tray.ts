@@ -21,6 +21,8 @@ let _clearUpdateInterval: () => void;
 let _useAutoUpdater: () => Promise<void>;
 let _forceQuit: () => void;
 
+let _isConnected: () => boolean;
+
 function init(deps: TrayInitDeps): void {
   _getMainWindow = deps.getMainWindow;
   _showWindow = deps.showWindow;
@@ -33,6 +35,7 @@ function init(deps: TrayInitDeps): void {
   _clearUpdateInterval = deps.clearUpdateInterval;
   _useAutoUpdater = deps.useAutoUpdater;
   _forceQuit = deps.forceQuit;
+  _isConnected = deps.isConnected;
 }
 
 function getTray(): Tray | null {
@@ -189,7 +192,7 @@ function getMenu(): Menu {
   ];
 
   const haConfigured = config.has('haBaseUrl') && config.get('haBaseUrl');
-  const statusLabel = haConfigured ? '🟢 Connected' : '🔴 Not Connected';
+  const statusLabel = haConfigured ? (_isConnected() ? '🟢 Connected' : '🟡 Reconnecting…') : '🔴 Not Connected';
 
   return Menu.buildFromTemplate([
     { label: statusLabel, enabled: false },
@@ -374,6 +377,10 @@ function applyThemeToAllWindows(theme: 'dark' | 'light'): void {
   }
 }
 
+function refreshMenu(): void {
+  if (tray) tray.setContextMenu(getMenu());
+}
+
 function createTray(deps: TrayInitDeps): void {
   init(deps);
   tray = new Tray(process.platform === 'darwin' ? ICON_MAC : ICON_WIN);
@@ -384,4 +391,4 @@ function createTray(deps: TrayInitDeps): void {
   }
 }
 
-export { createTray, getTray, getMenu, changePosition, setWindowFocusTimer };
+export { createTray, getTray, getMenu, changePosition, setWindowFocusTimer, refreshMenu };

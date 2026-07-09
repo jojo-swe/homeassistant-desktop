@@ -75,7 +75,7 @@ import { Tray, Menu, app, screen, shell, dialog } from 'electron';
 import Positioner from 'electron-traywindow-positioner';
 import config from '../../main/config';
 import * as haClient from '../../main/haClient';
-import { createTray, getTray, getMenu, changePosition, setWindowFocusTimer } from '../../main/tray';
+import { createTray, getTray, getMenu, changePosition, setWindowFocusTimer, refreshMenu } from '../../main/tray';
 import type { TrayInitDeps } from '../../main/types';
 
 function createDeps(): TrayInitDeps {
@@ -106,6 +106,7 @@ function createDeps(): TrayInitDeps {
     clearUpdateInterval: vi.fn(),
     useAutoUpdater: vi.fn().mockResolvedValue(undefined),
     forceQuit: vi.fn(),
+    isConnected: vi.fn(() => false),
   };
 }
 
@@ -150,6 +151,19 @@ describe('tray', () => {
     });
   });
 
+  describe('refreshMenu', () => {
+    test('rebuilds and sets context menu on existing tray', () => {
+      createTray(deps);
+      const callsBefore = mockTray.setContextMenu.mock.calls.length;
+      refreshMenu();
+      expect(mockTray.setContextMenu.mock.calls.length).toBe(callsBefore + 1);
+    });
+
+    test('does nothing when tray is not created', () => {
+      expect(() => refreshMenu()).not.toThrow();
+    });
+  });
+
   describe('getMenu', () => {
     test('builds a menu with status and quit items', () => {
       const menu = getMenu();
@@ -186,18 +200,36 @@ describe('tray', () => {
       expect(themeLabels).toContain('Light');
     });
 
-    test('shows connected status when HA is configured', () => {
+    test('shows connected status when HA is configured and connected', () => {
       vi.mocked(config.get).mockImplementation((key: string) => {
         if (key === 'haBaseUrl') return 'http://ha.local';
         if (key === 'allInstances') return [];
         return undefined;
       });
       vi.mocked(config.has).mockImplementation((key: string) => key === 'haBaseUrl');
+      vi.mocked(deps.isConnected).mockReturnValue(true);
+      createTray(deps);
       getMenu();
       const template = vi.mocked(Menu.buildFromTemplate).mock.calls.at(-1)![0] as any[];
       const statusItem = template.find((item: any) => item.label?.includes('Connected'));
       expect(statusItem).toBeDefined();
       expect(statusItem!.label).toContain('🟢');
+    });
+
+    test('shows reconnecting status when HA is configured but not connected', () => {
+      vi.mocked(config.get).mockImplementation((key: string) => {
+        if (key === 'haBaseUrl') return 'http://ha.local';
+        if (key === 'allInstances') return [];
+        return undefined;
+      });
+      vi.mocked(config.has).mockImplementation((key: string) => key === 'haBaseUrl');
+      vi.mocked(deps.isConnected).mockReturnValue(false);
+      createTray(deps);
+      getMenu();
+      const template = vi.mocked(Menu.buildFromTemplate).mock.calls.at(-1)![0] as any[];
+      const statusItem = template.find((item: any) => item.label?.includes('Reconnecting'));
+      expect(statusItem).toBeDefined();
+      expect(statusItem!.label).toContain('🟡');
     });
 
     test('includes instance menu items when instances exist', () => {

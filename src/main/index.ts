@@ -2,7 +2,7 @@ import { app, globalShortcut } from 'electron';
 import logger from 'electron-log';
 import config from './config';
 import * as windowManager from './window';
-import { createTray, changePosition } from './tray';
+import { createTray, changePosition, refreshMenu } from './tray';
 import { useAutoUpdater, clearUpdateInterval, getUpdateCheckerInterval } from './updater';
 import { registerAll } from './ipc';
 import * as sensorPusher from './sensorPusher';
@@ -62,6 +62,7 @@ async function initializeApp(): Promise<void> {
     forceQuit: () => {
       forceQuit = true;
     },
+    isConnected: () => availabilityChecker.isConnected(),
   });
 
   registerAll({
@@ -74,6 +75,7 @@ async function initializeApp(): Promise<void> {
       await windowManager.reinitMainWindow();
       availabilityChecker.init({
         showError: (isError: boolean) => windowManager.showError(isError),
+        onStatusChange: () => refreshMenu(),
       });
     },
     addInstance,
@@ -86,6 +88,7 @@ async function initializeApp(): Promise<void> {
 
   availabilityChecker.init({
     showError: (isError: boolean) => windowManager.showError(isError),
+    onStatusChange: () => refreshMenu(),
   });
 
   if (config.get('shortcutEnabled')) windowManager.registerKeyboardShortcut();

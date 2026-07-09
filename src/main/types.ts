@@ -94,6 +94,7 @@ export interface TrayInitDeps {
   clearUpdateInterval: () => void;
   useAutoUpdater: () => Promise<void>;
   forceQuit: () => void;
+  isConnected: () => boolean;
 }
 
 export interface IpcRegisterDeps {
