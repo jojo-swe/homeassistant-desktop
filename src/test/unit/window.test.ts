@@ -29,10 +29,16 @@ const mockBrowserWindow = {
   setSkipTaskbar: vi.fn(),
   hide: vi.fn(),
   destroy: vi.fn(),
+  isDestroyed: vi.fn(() => false),
 };
 
 vi.mock('electron', () => ({
-  BrowserWindow: vi.fn(() => mockBrowserWindow),
+  BrowserWindow: Object.assign(
+    vi.fn(() => mockBrowserWindow),
+    {
+      getAllWindows: vi.fn(() => [mockBrowserWindow]),
+    }
+  ),
   shell: { openExternal: vi.fn() },
   screen: { getDisplayNearestPoint: vi.fn() },
   globalShortcut: {
@@ -637,6 +643,19 @@ describe('window', () => {
       await windowManager.createMainWindow(false);
       await windowManager.reinitMainWindow();
       expect(mockBrowserWindow.destroy).toHaveBeenCalled();
+    });
+  });
+
+  describe('applyAccentColor', () => {
+    test('inserts CSS with accent color into all windows', () => {
+      windowManager.applyAccentColor('#ff5722');
+      expect(mockBrowserWindow.webContents.insertCSS).toHaveBeenCalledWith(expect.stringContaining('#ff5722'));
+    });
+
+    test('does nothing when color is empty', () => {
+      const callCount = mockBrowserWindow.webContents.insertCSS.mock.calls.length;
+      windowManager.applyAccentColor('');
+      expect(mockBrowserWindow.webContents.insertCSS.mock.calls.length).toBe(callCount);
     });
   });
 });

@@ -42,6 +42,9 @@ async function initializeApp(): Promise<void> {
 
   await windowManager.createMainWindow(!config.has('currentInstance'));
 
+  const storedAccent = config.get('accentColor');
+  if (storedAccent) windowManager.applyAccentColor(storedAccent);
+
   createTray({
     getMainWindow: () => windowManager.getMainWindow()!,
     showWindow: () => windowManager.showWindow(),

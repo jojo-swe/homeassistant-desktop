@@ -56,6 +56,7 @@ export interface AppConfig {
   pinnedEntities: string[];
   shortcuts: Shortcut[];
   theme?: 'dark' | 'light';
+  accentColor?: string;
   currentInstance?: number;
   windowSize?: [number, number];
   windowSizeDetached?: [number, number];

@@ -8,6 +8,18 @@ import { currentInstance } from './instances';
 import haNotificationBridge from './haNotificationBridge';
 import type { WindowInitDeps } from './types';
 
+const ACCENT_EXTRACT_JS = `
+new Promise(resolve => {
+  const timeout = setTimeout(() => resolve(null), 10000);
+  const check = () => {
+    const el = document.querySelector('home-assistant') || document.documentElement;
+    const c = getComputedStyle(el).getPropertyValue('--primary-color').trim();
+    if (c) { clearTimeout(timeout); resolve(c); return; }
+    setTimeout(check, 500);
+  };
+  check();
+})`;
+
 const INDEX_FILE = `file://${path.join(__dirname, '..', 'renderer', 'index.html')}`;
 const ERROR_FILE = `file://${path.join(__dirname, '..', 'renderer', 'error', 'index.html')}`;
 const PRELOAD_PATH = path.join(__dirname, '..', 'preload', 'index.js');
@@ -85,6 +97,17 @@ async function createMainWindow(show = false): Promise<void> {
         logger.info('HA notification bridge injected.');
       } catch (err) {
         logger.error('Failed to inject HA notification bridge:', err);
+      }
+
+      try {
+        const color = await mainWindow.webContents.executeJavaScript(ACCENT_EXTRACT_JS);
+        if (color && typeof color === 'string' && color !== config.get('accentColor')) {
+          config.set('accentColor', color);
+          applyAccentColor(color);
+          logger.info(`Accent color detected: ${color}`);
+        }
+      } catch (err) {
+        logger.error('Failed to extract accent color:', err);
       }
     }
   });
@@ -225,6 +248,16 @@ async function showError(isError: boolean): Promise<void> {
   }
 }
 
+function applyAccentColor(color: string): void {
+  if (!color) return;
+  const css = `:root { --ha-blue: ${color} !important; --ha-blue-dark: ${color} !important; }`;
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.insertCSS(css).catch(() => {});
+    }
+  }
+}
+
 export {
   init,
   getMainWindow,
@@ -236,4 +269,5 @@ export {
   registerKeyboardShortcut,
   unregisterKeyboardShortcut,
   showError,
+  applyAccentColor,
 };

@@ -309,6 +309,7 @@ describe('ipc', () => {
         if (key === 'haToken') return 'token';
         if (key === 'pinnedEntities') return ['light.test'];
         if (key === 'theme') return 'dark';
+        if (key === 'accentColor') return '#03a9f4';
         return undefined;
       });
       const reply = vi.fn();
@@ -320,6 +321,7 @@ describe('ipc', () => {
         haToken: 'token',
         pinnedEntities: ['light.test'],
         theme: 'dark',
+        accentColor: '#03a9f4',
       });
     });
 

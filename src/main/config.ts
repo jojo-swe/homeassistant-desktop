@@ -16,6 +16,7 @@ const store = new Store<AppConfig>({
     pinnedEntities: [],
     shortcuts: [] as Shortcut[],
     theme: 'dark' as 'dark' | 'light',
+    accentColor: '',
   },
 });
 

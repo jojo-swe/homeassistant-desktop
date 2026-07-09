@@ -101,6 +101,7 @@ function registerAll(deps: IpcRegisterDeps): void {
       haToken: config.get('haToken'),
       pinnedEntities: config.get('pinnedEntities') || [],
       theme: config.get('theme') || 'dark',
+      accentColor: config.get('accentColor') || '',
     });
     const entities = getCachedEntities();
     if (entities.length) event.reply('entities-loaded', entities);

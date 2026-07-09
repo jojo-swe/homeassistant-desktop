@@ -50,7 +50,7 @@
       document.documentElement.setAttribute('data-theme', 'light');
     }
     window.api.on('settings-loaded', (settings: unknown) => {
-      const s = settings as Settings & { theme?: 'dark' | 'light' };
+      const s = settings as Settings & { theme?: 'dark' | 'light'; accentColor?: string };
       haUrl = s.haBaseUrl || '';
       haToken = s.haToken || '';
       pinnedIds = s.pinnedEntities || [];
@@ -62,6 +62,10 @@
         isLightTheme = false;
         document.documentElement.removeAttribute('data-theme');
         localStorage.setItem('settings-theme', 'dark');
+      }
+      if (s.accentColor) {
+        document.documentElement.style.setProperty('--ha-blue', s.accentColor);
+        document.documentElement.style.setProperty('--ha-blue-dark', s.accentColor);
       }
       loadShortcuts();
     });
