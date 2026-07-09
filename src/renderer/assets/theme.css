@@ -289,3 +289,23 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Window drag regions ────────────────────────────────────────────────────── */
+
+.drag-region {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Windows: pad header right for native titleBarOverlay controls (~140px) */
+[data-platform='win32'] .drag-region {
+  padding-right: 140px;
+}
+
+/* macOS: pad header left for traffic lights (~80px) */
+[data-platform='darwin'] .drag-region {
+  padding-left: 80px;
+}

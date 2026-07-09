@@ -6,6 +6,11 @@ vi.mock('electron', () => {
     loadURL: vi.fn(),
     on: vi.fn(),
     close: vi.fn(),
+    isDestroyed: vi.fn(() => false),
+    webContents: {
+      on: vi.fn(),
+      executeJavaScript: vi.fn().mockResolvedValue(undefined),
+    },
   };
   return {
     BrowserWindow: vi.fn(() => mockWindow),

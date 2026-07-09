@@ -256,11 +256,11 @@
 </script>
 
 <div class="app">
-  <div class="header">
+  <div class="header drag-region">
     <img src={favicon} alt="Home Assistant" />
     <h1>Settings</h1>
     <div class="header-actions">
-      <button class="icon-btn glass" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
+      <button class="icon-btn glass no-drag" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
         {isLightTheme ? '🌙' : '☀️'}
       </button>
     </div>

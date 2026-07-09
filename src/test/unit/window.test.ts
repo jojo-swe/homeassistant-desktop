@@ -192,12 +192,18 @@ describe('window', () => {
       await windowManager.createMainWindow(false);
       const cb = mockBrowserWindow.webContents.on.mock.calls.find((c: any[]) => c[0] === 'did-finish-load')![1];
       await cb();
-      expect(mockBrowserWindow.webContents.executeJavaScript).not.toHaveBeenCalled();
+      // Platform attribute is always set, but HA bridge should not be injected
+      expect(mockBrowserWindow.webContents.executeJavaScript).toHaveBeenCalledTimes(1);
+      expect(mockBrowserWindow.webContents.executeJavaScript).toHaveBeenCalledWith(
+        expect.stringContaining('data-platform')
+      );
     });
 
     test('did-finish-load catches injection errors', async () => {
       mockBrowserWindow.webContents.getURL.mockReturnValue('http://ha.local:8123');
-      mockBrowserWindow.webContents.executeJavaScript.mockRejectedValueOnce(new Error('inject failed'));
+      mockBrowserWindow.webContents.executeJavaScript
+        .mockResolvedValueOnce(undefined) // platform attribute
+        .mockRejectedValueOnce(new Error('inject failed')); // HA bridge
       windowManager.init({
         showWindow: vi.fn(),
         changePosition: vi.fn(),

@@ -59,7 +59,11 @@ async function createMainWindow(show = false): Promise<void> {
     show: false,
     skipTaskbar: !show,
     autoHideMenuBar: true,
-    frame: config.get('detachedMode') && process.platform !== 'darwin',
+    frame: process.platform === 'darwin' ? false : undefined,
+    titleBarStyle: process.platform !== 'darwin' ? 'hidden' : undefined,
+    titleBarOverlay: process.platform === 'win32'
+      ? { color: 'rgba(0,0,0,0)', symbolColor: '#e8e8f0', height: 40 }
+      : undefined,
     transparent: process.platform === 'darwin',
     vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
     backgroundMaterial: process.platform === 'win32' ? 'acrylic' : undefined,
@@ -89,6 +93,10 @@ async function createMainWindow(show = false): Promise<void> {
     if (config.get('detachedMode') && process.platform === 'darwin') {
       await mainWindow.webContents.insertCSS('body { -webkit-app-region: drag; }');
     }
+
+    await mainWindow.webContents.executeJavaScript(
+      `document.documentElement.setAttribute('data-platform', '${process.platform}');`
+    );
 
     const url = mainWindow.webContents.getURL();
     if (!url.includes('renderer/index') && !url.includes('renderer/error') && url.startsWith('http')) {

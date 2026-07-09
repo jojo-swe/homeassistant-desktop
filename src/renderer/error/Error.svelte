@@ -32,7 +32,8 @@
 </script>
 
 <div class="container">
-  <button class="theme-toggle glass" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
+  <div class="drag-region top-bar"></div>
+  <button class="theme-toggle glass no-drag" onclick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
     {isLightTheme ? '🌙' : '☀️'}
   </button>
   <div class="error-card glass-elevated" role="alert">
@@ -63,6 +64,13 @@
     padding: 20px;
     gap: 24px;
     position: relative;
+  }
+  .top-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
   }
   .theme-toggle {
     position: absolute;
