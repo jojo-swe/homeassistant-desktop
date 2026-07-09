@@ -56,6 +56,7 @@ vi.mock('../../main/activeWindow', () => ({
 
 vi.mock('../../main/haClient', () => ({
   getStates: vi.fn(),
+  getStatesWithCredentials: vi.fn(),
   getToggleableEntities: vi.fn(),
 }));
 
@@ -361,7 +362,7 @@ describe('ipc', () => {
   describe('test-connection', () => {
     test('returns ok with count on success', async () => {
       const mockStates = [{ entity_id: 'light.1' }, { entity_id: 'switch.2' }];
-      vi.mocked(haClient.getStates).mockResolvedValue(mockStates as any);
+      vi.mocked(haClient.getStatesWithCredentials).mockResolvedValue(mockStates as any);
       registerAll(deps);
       const handler = getHandle('test-connection')!;
       const result = await handler({}, { haBaseUrl: 'http://ha.local', haToken: 'token' });
@@ -370,15 +371,15 @@ describe('ipc', () => {
     });
 
     test('returns ok:false when getStates returns null', async () => {
-      vi.mocked(haClient.getStates).mockResolvedValue(null);
+      vi.mocked(haClient.getStatesWithCredentials).mockResolvedValue(null);
       registerAll(deps);
       const handler = getHandle('test-connection')!;
       const result = await handler({}, { haBaseUrl: 'http://ha.local', haToken: 'token' });
       expect(result.ok).toBe(false);
     });
 
-    test('returns error on failure and restores config', async () => {
-      vi.mocked(haClient.getStates).mockRejectedValue(new Error('Connection refused'));
+    test('returns error on failure', async () => {
+      vi.mocked(haClient.getStatesWithCredentials).mockRejectedValue(new Error('Connection refused'));
       registerAll(deps);
       const handler = getHandle('test-connection')!;
       const result = await handler({}, { haBaseUrl: 'http://ha.local', haToken: 'token' });

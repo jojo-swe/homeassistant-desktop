@@ -11,6 +11,7 @@ import { currentInstance, addInstance } from './instances';
 import { openSettingsWindow } from './settingsWindow';
 import { refreshEntityCache, getCachedEntities, setCachedEntities } from './entityCache';
 import * as availabilityChecker from './availabilityChecker';
+import { stopTracking } from './activeWindow';
 
 logger.catchErrors();
 logger.info(`${app.getName()} started`);
@@ -18,6 +19,7 @@ logger.info(`Platform: ${process.platform} ${process.arch}`);
 
 let forceQuit = false;
 let autostartEnabled = false;
+let entityCacheInterval: NodeJS.Timeout | null = null;
 
 function checkAutoStart(): void {
   autostartEnabled = app.getLoginItemSettings().openAtLogin;
@@ -89,7 +91,10 @@ async function initializeApp(): Promise<void> {
   });
 
   if (config.get('shortcutEnabled')) windowManager.registerKeyboardShortcut();
-  globalShortcut.register('CommandOrControl+Alt+Return', () => windowManager.toggleFullScreen());
+  const fullscreenRegistered = globalShortcut.register('CommandOrControl+Alt+Return', () => windowManager.toggleFullScreen());
+  if (!fullscreenRegistered) {
+    logger.warn('Failed to register fullscreen shortcut (CommandOrControl+Alt+Return) — may be in use by another app.');
+  }
   shortcutManager.registerAll();
 
   if (!config.has('currentInstance')) config.set('disableHover', true);
@@ -98,7 +103,7 @@ async function initializeApp(): Promise<void> {
   sensorPusher.init(30_000);
 
   await refreshEntityCache();
-  setInterval(refreshEntityCache, 60 * 1000);
+  entityCacheInterval = setInterval(refreshEntityCache, 60 * 1000);
 }
 
 app.whenReady().then(initializeApp).catch((err) => {
@@ -109,6 +114,12 @@ app.on('will-quit', () => {
   windowManager.unregisterKeyboardShortcut();
   shortcutManager.unregisterAll();
   availabilityChecker.stop();
+  sensorPusher.stop();
+  stopTracking();
+  if (entityCacheInterval) {
+    clearInterval(entityCacheInterval);
+    entityCacheInterval = null;
+  }
 });
 
 app.on('window-all-closed', () => {

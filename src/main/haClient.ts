@@ -61,6 +61,27 @@ async function getStates(): Promise<HAState[] | null> {
   return result as HAState[] | null;
 }
 
+async function getStatesWithCredentials(baseUrl: string, token: string): Promise<HAState[] | null> {
+  const cleanUrl = baseUrl.replace(/\/$/, '');
+  try {
+    const res = await fetch(`${cleanUrl}/api/states`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!res.ok) {
+      logger.error(`HA API error: ${res.status} ${res.statusText} → states`);
+      return null;
+    }
+    return (await res.json()) as HAState[];
+  } catch (err) {
+    logger.error(`HA fetch failed (states): ${(err as Error).message}`);
+    return null;
+  }
+}
+
 async function getToggleableEntities(): Promise<HAEntity[]> {
   const states = await getStates();
   if (!states) return [];
@@ -89,4 +110,4 @@ async function getState(entityId: string): Promise<HAState | null> {
   return result as HAState | null;
 }
 
-export { isConfigured, getToggleableEntities, toggle, getState, getStates };
+export { isConfigured, getToggleableEntities, toggle, getState, getStates, getStatesWithCredentials };

@@ -15,6 +15,7 @@ const PRELOAD_PATH = path.join(__dirname, '..', 'preload', 'index.js');
 let mainWindow: BrowserWindow | null = null;
 let initialized = false;
 let resizeEvent: boolean = false;
+let isNavigating = false;
 
 let _showWindow: () => void;
 let _changePosition: () => void;
@@ -206,11 +207,14 @@ function unregisterKeyboardShortcut(): void {
 
 async function showError(isError: boolean): Promise<void> {
   if (!mainWindow) return;
+  if (isNavigating) return;
   if (!isError && mainWindow.webContents.getURL().includes('renderer/error')) {
-    await mainWindow.loadURL(INDEX_FILE);
+    isNavigating = true;
+    await mainWindow.loadURL(INDEX_FILE).finally(() => { isNavigating = false; });
   }
   if (isError && currentInstance() && !mainWindow.webContents.getURL().includes('renderer/error')) {
-    await mainWindow.loadURL(ERROR_FILE);
+    isNavigating = true;
+    await mainWindow.loadURL(ERROR_FILE).finally(() => { isNavigating = false; });
   }
 }
 

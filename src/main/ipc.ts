@@ -43,8 +43,11 @@ function registerAll(deps: IpcRegisterDeps): void {
     app.exit();
   });
 
+  let bonjourFind: { stop: () => void } | null = null;
+
   ipcMain.on('start-bonjour', (event) => {
-    (bonjour as { find: (opts: Record<string, unknown>, cb: (instance: { txt: { internal_url: string; external_url: string } }) => void) => void }).find(
+    if (bonjourFind) bonjourFind.stop();
+    bonjourFind = (bonjour as { find: (opts: Record<string, unknown>, cb: (instance: { txt: { internal_url: string; external_url: string } }) => void) => { stop: () => void } }).find(
       { type: 'home-assistant' },
       (instance) => {
         event.reply('bonjour-instance', {
@@ -53,6 +56,12 @@ function registerAll(deps: IpcRegisterDeps): void {
         });
       },
     );
+    setTimeout(() => {
+      if (bonjourFind) {
+        bonjourFind.stop();
+        bonjourFind = null;
+      }
+    }, 30_000);
   });
 
   ipcMain.on('ha-notification', (_event, { title, message }: { title: string; message: string }) => {
@@ -113,17 +122,20 @@ function registerAll(deps: IpcRegisterDeps): void {
   });
 
   ipcMain.handle('test-connection', async (_event, { haBaseUrl, haToken }): Promise<TestConnectionResult> => {
-    const orig = { url: config.get('haBaseUrl'), token: config.get('haToken') };
-    config.set('haBaseUrl', haBaseUrl);
-    config.set('haToken', haToken);
     try {
-      const states = await haClient.getStates();
-      config.set('haBaseUrl', orig.url);
-      config.set('haToken', orig.token);
+      const trimmedUrl = haBaseUrl.trim().replace(/\/$/, '');
+      const trimmedToken = haToken.trim();
+      if (!trimmedUrl || !trimmedToken) {
+        return { ok: false, error: 'URL and token are required.' };
+      }
+      try {
+        new URL(trimmedUrl);
+      } catch {
+        return { ok: false, error: 'Invalid URL format.' };
+      }
+      const states = await haClient.getStatesWithCredentials(trimmedUrl, trimmedToken);
       return { ok: !!states, count: states?.length };
     } catch (err) {
-      config.set('haBaseUrl', orig.url);
-      config.set('haToken', orig.token);
       return { ok: false, error: (err as Error).message };
     }
   });
@@ -187,6 +199,30 @@ function registerAll(deps: IpcRegisterDeps): void {
       const filePath = result.filePaths[0];
       const raw = fs.readFileSync(filePath, 'utf-8');
       const data = JSON.parse(raw);
+
+      if (typeof data !== 'object' || data === null) {
+        return { ok: false, error: 'Invalid config file: expected JSON object.' };
+      }
+
+      if (data.haBaseUrl !== undefined) {
+        if (typeof data.haBaseUrl !== 'string') {
+          return { ok: false, error: 'Invalid haBaseUrl: expected string.' };
+        }
+        try { new URL(data.haBaseUrl); } catch { return { ok: false, error: 'Invalid haBaseUrl: not a valid URL.' }; }
+      }
+      if (data.haToken !== undefined && typeof data.haToken !== 'string') {
+        return { ok: false, error: 'Invalid haToken: expected string.' };
+      }
+      if (data.pinnedEntities !== undefined && !Array.isArray(data.pinnedEntities)) {
+        return { ok: false, error: 'Invalid pinnedEntities: expected array.' };
+      }
+      if (data.shortcuts !== undefined && !Array.isArray(data.shortcuts)) {
+        return { ok: false, error: 'Invalid shortcuts: expected array.' };
+      }
+      if (data.allInstances !== undefined && !Array.isArray(data.allInstances)) {
+        return { ok: false, error: 'Invalid allInstances: expected array.' };
+      }
+
       const keys = [
         'haBaseUrl', 'haToken', 'pinnedEntities', 'shortcuts',
         'allInstances', 'automaticSwitching', 'detachedMode',

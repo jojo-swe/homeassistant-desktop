@@ -74,20 +74,30 @@ function checkForAvailableInstance(): void {
       return currentInstance(externalUrl);
   });
 
-  for (const instance of instances.filter((e) => e !== currentInstance())) {
-    const url = new URL(instance);
-    const request = net.request(`${url.origin}/auth/providers`);
-    let found: string | null = null;
-    request.on('response', (response) => {
-      if (response.statusCode === 200) found = instance;
-    });
-    request.on('error', () => {});
-    request.end();
-    if (found) {
-      currentInstance(found);
-      break;
-    }
-  }
+  const otherInstances = instances.filter((e) => e !== currentInstance());
+  Promise.all(
+    otherInstances.map(
+      (instance) =>
+        new Promise<string | null>((resolve) => {
+          let url: URL;
+          try {
+            url = new URL(instance);
+          } catch {
+            resolve(null);
+            return;
+          }
+          const request = net.request(`${url.origin}/auth/providers`);
+          request.on('response', (response) => {
+            resolve(response.statusCode === 200 ? instance : null);
+          });
+          request.on('error', () => resolve(null));
+          request.end();
+        }),
+    ),
+  ).then((results) => {
+    const found = results.find((r) => r !== null);
+    if (found) currentInstance(found);
+  });
 }
 
 function getBonjour(): Bonjour {
