@@ -102,8 +102,21 @@
     "win": {
       "target": [
         "nsis",
-        "zip"
-      ]
+        "zip",
+        "portable"
+      ],
+      "signtoolOptions": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installerLanguages": ["en_US"],
+      "language": "1033"
+    },
+    "portable": {
+      "artifactName": "${productName}-v${version}-${os}-${arch}-portable.${ext}"
     },
     "linux": {
       "target": [

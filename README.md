@@ -158,6 +158,7 @@ Inspired by the "Liquid Glass" design language from iOS 26 — translucent, laye
 - **Glassmorphism foundation** — Translucent surfaces, `backdrop-filter: blur(20px)`, inner glow shadows, elevation levels ✅
 - **Redesign all UI pages** — Onboarding, settings, and error pages with glass cards, frosted inputs, and animated transitions ✅
 - **Native window vibrancy** — macOS `vibrancy: 'under-window'`, Windows 11 `backgroundMaterial: 'acrylic'`, Linux CSS fallback ✅
+- **Packaging & distribution** — Unsigned builds, portable Windows executable, non-one-click NSIS installer ✅
 - **Dynamic accent color** — Detect HA theme color via `/api/config` and apply throughout the app
 - **Animated transitions** — Fade+scale page transitions, stagger fade-ins, `prefers-reduced-motion` support ✅
 - **TypeScript migration** — Type-safe codebase ✅ (completed in v1.6.0)

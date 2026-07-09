@@ -40,10 +40,16 @@ describe('packaging', () => {
     expect(pkg.build.mac?.category).toBeTruthy();
   });
 
-  test('Windows targets include nsis and zip', () => {
+  test('Windows targets include nsis, zip, and portable', () => {
     const winTargets = (pkg.build.win?.target || []).map((t: string) => t.toLowerCase());
     expect(winTargets).toContain('nsis');
     expect(winTargets).toContain('zip');
+    expect(winTargets).toContain('portable');
+  });
+
+  test('NSIS installer is non-one-click with directory selection', () => {
+    expect(pkg.build.nsis?.oneClick).toBe(false);
+    expect(pkg.build.nsis?.allowToChangeInstallationDirectory).toBe(true);
   });
 
   test('Linux targets include AppImage, deb, and rpm', () => {
