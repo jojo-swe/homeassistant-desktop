@@ -73,7 +73,7 @@
   },
   "build": {
     "appId": "io.github.jojo_swe.homeassistant-desktop",
-    "artifactName": "${productName}-v${version}-${os}-${arch}.${ext}",
+    "artifactName": "${name}-v${version}-${os}-${arch}.${ext}",
     "productName": "Home Assistant Desktop",
     "directories": {
       "output": "dist"
@@ -118,7 +118,7 @@
       "language": "1033"
     },
     "portable": {
-      "artifactName": "${productName}-v${version}-${os}-${arch}-portable.${ext}"
+      "artifactName": "${name}-v${version}-${os}-${arch}-portable.${ext}"
     },
     "linux": {
       "target": [
