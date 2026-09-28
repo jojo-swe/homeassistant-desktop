@@ -28,17 +28,17 @@ interface IAudioEndpointVolume {
   int j();
   int GetMasterVolumeLevelScalar(out float pfLevel);
   int k(); int l(); int m(); int n();
-  int SetMute([MarshalAs(UnmanagedType.Bool)] bool bMute, Guid pguidEventContext);
+  [PreserveSig] int SetMute([MarshalAs(UnmanagedType.Bool)] bool bMute, Guid pguidEventContext);
   int GetMute(out bool pbMute);
 }
 [Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 interface IMMDevice {
-  int Activate(ref Guid id, int clsCtx, int activationParams, out IAudioEndpointVolume aev);
+  [PreserveSig] int Activate(ref Guid id, int clsCtx, int activationParams, out IAudioEndpointVolume aev);
 }
 [Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 interface IMMDeviceEnumerator {
   int f();
-  int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice endpoint);
+  [PreserveSig] int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice endpoint);
 }
 [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")] class MMDeviceEnumeratorComObject { }
 public class HadAudio {

@@ -91,9 +91,10 @@ describe('updater', () => {
       });
       // Reset module state to allow listener registration
       vi.resetModules();
-      const { useAutoUpdater: freshUseAutoUpdater } = await import('../../main/updater');
+      const fresh = await import('../../main/updater');
       const { showNotification: freshShowNotification } = await import('../../main/notifications');
-      await freshUseAutoUpdater(onForceQuit);
+      await fresh.useAutoUpdater(onForceQuit);
+      fresh.clearUpdateInterval();
 
       expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
       expect(freshShowNotification).toHaveBeenCalledWith(

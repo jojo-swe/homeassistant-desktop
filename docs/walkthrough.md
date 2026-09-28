@@ -8,8 +8,9 @@ This guide covers setup and some example automations.
 
 ## 1. Connect the app
 
-1. Launch the app and enter your Home Assistant URL (for example `http://homeassistant.local:8123`),
-   or pick an instance found automatically on your network.
+1. Launch the app and enter your Home Assistant URL (for example `https://homeassistant.example.com`,
+   or `http://homeassistant.local:8123` on your home network), or pick an instance found
+   automatically on your network.
 2. Log in to Home Assistant in the app window as usual.
 
 This is enough for the dashboard, native notifications (section 3) and commands (section 4).
@@ -19,7 +20,9 @@ Sensors and tray Quick Actions also need an access token:
 4. In the app, open **⚙ Settings** from the tray menu, enter the URL, paste the token and click
    **Save & Test**.
 
-The token is stored locally in the app's config file and is only sent to the URL you entered.
+The token is stored locally in the app's config file and is only sent to the URL you entered. It
+travels in every request, so use an `https://` URL whenever the connection leaves your home
+network; plain `http://` is fine only on a network you trust.
 
 ## 2. Desktop sensors
 
