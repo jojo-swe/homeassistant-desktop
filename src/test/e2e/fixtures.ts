@@ -7,12 +7,25 @@ import * as net from 'net';
 export interface TestFixture {
   process: ChildProcess;
   page: Page;
+  debugPort: number;
 }
 
 // Electron 43 downloads its binary on first require, not during npm install.
 const ELECTRON_BIN = require('electron') as string;
 const APP_ENTRY = path.join(__dirname, '../../..', 'out/main/index.js');
-const DEBUG_PORT = 9222;
+
+async function findAvailablePort(): Promise<number> {
+  const server = net.createServer();
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const address = server.address();
+  const port = address && typeof address !== 'string' ? address.port : 0;
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  if (!port) throw new Error('Could not allocate an Electron debug port.');
+  return port;
+}
 
 async function waitForPort(port: number, child: ChildProcess, timeoutMs = 30000): Promise<void> {
   const start = Date.now();
@@ -39,10 +52,13 @@ async function waitForPort(port: number, child: ChildProcess, timeoutMs = 30000)
 }
 
 export const test = base.extend<TestFixture>({
-  process: async ({}, use) => {
+  debugPort: async ({}, use) => {
+    await use(await findAvailablePort());
+  },
+  process: async ({ debugPort }, use) => {
     const args = [
       ...(process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : []),
-      `--remote-debugging-port=${DEBUG_PORT}`,
+      `--remote-debugging-port=${debugPort}`,
       APP_ENTRY,
     ];
     const child = spawn(ELECTRON_BIN, args, {
@@ -61,14 +77,20 @@ export const test = base.extend<TestFixture>({
       }
     });
 
-    await waitForPort(DEBUG_PORT, child);
+    await waitForPort(debugPort, child);
     await use(child);
-    child.kill('SIGTERM');
-    if (!child.killed) child.kill('SIGKILL');
-    await new Promise((r) => setTimeout(r, 1000));
+    if (child.exitCode === null && child.signalCode === null) {
+      const exited = new Promise<void>((resolve) => child.once('exit', () => resolve()));
+      child.kill('SIGTERM');
+      await Promise.race([exited, new Promise<void>((resolve) => setTimeout(resolve, 1000))]);
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill('SIGKILL');
+        await exited;
+      }
+    }
   },
-  page: async ({ process }, use) => {
-    const browser = await chromium.connectOverCDP(`http://127.0.0.1:${DEBUG_PORT}`);
+  page: async ({ process, debugPort }, use) => {
+    const browser = await chromium.connectOverCDP(`http://127.0.0.1:${debugPort}`);
     const contexts = browser.contexts();
     const ctx = contexts[0] || (await browser.newContext());
     const pages = ctx.pages();
