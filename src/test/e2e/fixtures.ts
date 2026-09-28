@@ -9,16 +9,8 @@ export interface TestFixture {
   page: Page;
 }
 
-const ELECTRON_BIN = path.join(
-  __dirname,
-  '../../..',
-  'node_modules/electron/dist',
-  process.platform === 'win32'
-    ? 'electron.exe'
-    : process.platform === 'darwin'
-      ? 'Electron.app/Contents/MacOS/Electron'
-      : 'electron'
-);
+// Electron 43 downloads its binary on first require, not during npm install.
+const ELECTRON_BIN = require('electron') as string;
 const APP_ENTRY = path.join(__dirname, '../../..', 'out/main/index.js');
 const DEBUG_PORT = 9222;
 
