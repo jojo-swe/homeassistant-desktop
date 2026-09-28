@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-09-28
+
+First stable release of the 2.x "Liquid Glass" line. It includes everything from
+[2.0.0-beta.1](https://github.com/jojo-swe/homeassistant-desktop/releases/tag/v2.0.0-beta.1)
+plus fixes for problems found in a pre-release review. Several would have affected every user.
+
+> **Upgrading from 2.0.0-beta.1 or 1.6.0:** those versions can't auto-update to this one because of
+> the packaging bug fixed here. Download 2.0.0 manually once; later updates install automatically on
+> Windows and Linux (AppImage). The Windows installer upgrades 1.6.0 in place.
+
+### Security
+
+- **IPC sender validation.** The preload bridge is also exposed to the remote Home Assistant page, and
+  IPC handlers didn't check who was calling. Any page loaded in the main window could read the stored
+  access token or change settings. Privileged channels now accept only the app's own pages; the
+  Home Assistant origin may only send notifications and commands.
+- **Navigation guard.** The main window stays on the app's pages and your configured instances; other
+  links open in the system browser.
+- **Safe external links.** Only `http(s)` and `mailto` URLs are handed to the OS. Schemes such as
+  `smb:` or `ms-*` can launch programs on Windows.
+- Settings import rejects instance URLs that aren't `http(s)`; pinned-entity input is validated.
+
+### Fixed
+
+- Home Assistant didn't load at startup for configured users. The onboarding page asked for the
+  current instance before the IPC handlers were registered, and the request was dropped.
+- **Reconnect** on the connection-lost page quit the app on Windows and Linux.
+- The app couldn't be quit by OS logout/shutdown, installers or `SIGTERM`: closing the window only
+  hid it.
+- Pinning Quick Actions in Settings never saved (Svelte state couldn't be sent over IPC).
+- Auto-update downloads failed: release asset names contained spaces, which GitHub renames, so the
+  URLs in the update manifests returned 404.
+- Windows x64 / arm64 (and macOS Intel / Apple Silicon) builds overwrote each other's update manifest,
+  which could offer the wrong architecture's installer.
+- Tray menu actions failed after the main window was re-created.
+- A Bonjour reply without a TXT record crashed discovery. A new mDNS browser was also leaked every few
+  seconds while Home Assistant was unreachable.
+- Windows: the active-window sensor always reported `powershell`.
+- Windows: `mute` / `unmute` commands toggled instead of setting the state.
+- The onboarding window now appears on first launch.
+- **Start at Login** and **Enable Shortcut** take effect immediately. The tray menu refreshes when
+  entities or pins change.
+
+### Changed
+
+- Updates download in the background and install when you quit, with a notification to restart now.
+  They no longer restart the app mid-use. Turning off **Automatic Updates** stops update checks
+  entirely, and a failed check no longer stops future checks.
+- Only one instance of the app can run at a time; launching it again shows the existing window.
+- The update check no longer delays startup.
+- Release files are now named `homeassistant-desktop-v<version>-<os>-<arch>.<ext>`. The Windows
+  installer covers both x64 and ARM64.
+- The release workflow verifies update manifests before publishing and takes release notes from
+  this changelog.
+
+### Development
+
+- E2E suite runs on Linux CI. It previously hard-coded `electron.exe`, so it never passed. It now
+  uses an isolated profile per test, and new tests cover startup with a configured instance, the
+  navigation guard and IPC sender checks.
+- CI runs lint and format checks and uses `npm ci`. Action versions are aligned.
+- Added `CLAUDE.md`, `docs/walkthrough.md` (sensors, notifications, commands) and a SessionStart hook
+  for Claude Code on the web.
+
 ## [2.0.0-beta.1] - 2026-07-09
 
 ### Liquid Glass Graphical Overhaul + Comprehensive Bug Sweep

@@ -215,6 +215,24 @@ describe('availabilityChecker', () => {
       expect(() => availabilityChecker['checkForAvailableInstance']()).not.toThrow();
     });
 
+    test('stops the previous mDNS browser before starting a new one', () => {
+      vi.mocked(config.get).mockReturnValue(['http://ha.local:8123', 'http://ha.remote:8123']);
+      vi.mocked(currentInstance).mockReturnValue('http://ha.local:8123');
+      const first = { stop: vi.fn() };
+      const second = { stop: vi.fn() };
+      vi.mocked(availabilityChecker.getBonjour().find as any)
+        .mockReturnValueOnce(first)
+        .mockReturnValueOnce(second);
+
+      availabilityChecker.checkForAvailableInstance();
+      availabilityChecker.checkForAvailableInstance();
+      expect(first.stop).toHaveBeenCalledTimes(1);
+      expect(second.stop).not.toHaveBeenCalled();
+
+      availabilityChecker.stop();
+      expect(second.stop).toHaveBeenCalledTimes(1);
+    });
+
     test('sets currentInstance when a remote instance responds 200', async () => {
       vi.mocked(config.get).mockReturnValue(['http://ha.local:8123', 'http://ha.remote:8123']);
       vi.mocked(currentInstance).mockReturnValue('http://ha.local:8123');

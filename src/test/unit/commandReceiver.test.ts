@@ -138,7 +138,19 @@ describe('commandReceiver', () => {
       const original = process.platform;
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
       execute('mute', {});
-      expect(execFile).toHaveBeenCalledWith('powershell', expect.any(Array), expect.any(Object));
+      expect(execFile).toHaveBeenCalledWith('powershell', expect.any(Array), expect.any(Object), expect.any(Function));
+      Object.defineProperty(process, 'platform', { value: original, configurable: true });
+    });
+
+    test('sets (not toggles) the mute state on win32', () => {
+      const original = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      execute('mute', {});
+      execute('unmute', {});
+      const scripts = vi.mocked(execFile).mock.calls.map((c) => (c[1] as string[]).at(-1));
+      expect(scripts[0]).toContain('[HadAudio]::SetMute($true)');
+      expect(scripts[1]).toContain('[HadAudio]::SetMute($false)');
+      expect(scripts.join('')).not.toContain('SendKeys');
       Object.defineProperty(process, 'platform', { value: original, configurable: true });
     });
 
@@ -164,7 +176,7 @@ describe('commandReceiver', () => {
       const original = process.platform;
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
       execute('unmute', {});
-      expect(execFile).toHaveBeenCalledWith('powershell', expect.any(Array), expect.any(Object));
+      expect(execFile).toHaveBeenCalledWith('powershell', expect.any(Array), expect.any(Object), expect.any(Function));
       Object.defineProperty(process, 'platform', { value: original, configurable: true });
     });
 
