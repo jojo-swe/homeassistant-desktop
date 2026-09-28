@@ -40,7 +40,12 @@ async function waitForPort(port: number, child: ChildProcess, timeoutMs = 30000)
 
 export const test = base.extend<TestFixture>({
   process: async ({}, use) => {
-    const child = spawn(ELECTRON_BIN, [`--remote-debugging-port=${DEBUG_PORT}`, APP_ENTRY], {
+    const args = [
+      ...(process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : []),
+      `--remote-debugging-port=${DEBUG_PORT}`,
+      APP_ENTRY,
+    ];
+    const child = spawn(ELECTRON_BIN, args, {
       cwd: path.join(__dirname, '../../..'),
       env: { ...process.env, NODE_ENV: 'test', ELECTRON_DISABLE_SECURITY_WARNINGS: 'true' },
       stdio: 'pipe',
