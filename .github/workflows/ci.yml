@@ -80,5 +80,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 xdg-utils libatspi2.0-0 libdrm2 libgbm1
 
+      # Ubuntu 24.04 blocks unprivileged user namespaces, so Chromium falls back to the setuid
+      # sandbox helper, which npm can't install with the required owner/mode.
+      - name: Configure Electron sandbox helper
+        run: |
+          node node_modules/electron/install.js
+          sudo chown root:root node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
+
       - name: Build and run E2E tests
         run: xvfb-run -a npm run test:e2e
