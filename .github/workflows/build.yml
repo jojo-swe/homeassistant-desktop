@@ -5,6 +5,16 @@ on:
     branches: [master]
     tags:
       - 'v*'
+  # Full packaging build for PRs that can affect the installers or update manifests (never publishes).
+  pull_request:
+    branches: [master]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/build.yml'
+      - 'scripts/**'
+      - 'build/**'
+      - 'assets/**'
   workflow_dispatch:
     inputs:
       release:
@@ -17,8 +27,8 @@ permissions:
 
 concurrency:
   group: desktop-build-${{ github.ref }}
-  # Never cancel a run that may be publishing a release.
-  cancel-in-progress: ${{ github.event_name == 'push' && github.ref_type == 'branch' }}
+  # Superseded branch/PR builds are cancelled; never cancel a run that may be publishing a release.
+  cancel-in-progress: ${{ github.ref_type == 'branch' && github.event_name != 'workflow_dispatch' }}
 
 jobs:
   validate:
