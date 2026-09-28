@@ -9,7 +9,16 @@ export interface TestFixture {
   page: Page;
 }
 
-const ELECTRON_BIN = path.join(__dirname, '../../..', 'node_modules/electron/dist/electron.exe');
+const ELECTRON_BIN = path.join(
+  __dirname,
+  '../../..',
+  'node_modules/electron/dist',
+  process.platform === 'win32'
+    ? 'electron.exe'
+    : process.platform === 'darwin'
+      ? 'Electron.app/Contents/MacOS/Electron'
+      : 'electron'
+);
 const APP_ENTRY = path.join(__dirname, '../../..', 'out/main/index.js');
 const DEBUG_PORT = 9222;
 
