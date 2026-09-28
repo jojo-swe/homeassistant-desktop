@@ -21,8 +21,9 @@ Sensors and tray Quick Actions also need an access token:
    **Save & Test**.
 
 The token is stored locally in the app's config file and is only sent to the URL you entered. It
-travels in every request, so use an `https://` URL whenever the connection leaves your home
-network; plain `http://` is fine only on a network you trust.
+travels in every request, so use an `https://` URL whenever you save a token: over plain `http://`
+anyone who can see the traffic, even on your home network, can read it. `http://` URLs still work
+for setups that can't use HTTPS.
 
 ## 2. Desktop sensors
 
