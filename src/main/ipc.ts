@@ -1,4 +1,4 @@
-import { ipcMain, app, dialog } from 'electron';
+import { ipcMain, app, dialog, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
 import * as fs from 'node:fs';
 import logger from 'electron-log';
 import config from './config';
@@ -9,7 +9,38 @@ import * as haClient from './haClient';
 import { execute as executeCommand } from './commandReceiver';
 import * as shortcutManager from './shortcutManager';
 import * as sensorPusher from './sensorPusher';
+import { isHttpUrl, isInstanceUrl, isLocalAppUrl } from './urlSafety';
 import type { HAEntity, IpcRegisterDeps, SaveSettingsResult, TestConnectionResult } from './types';
+
+type SenderEvent = Pick<IpcMainEvent | IpcMainInvokeEvent, 'senderFrame'>;
+
+function senderUrl(event: SenderEvent): string {
+  return event.senderFrame?.url ?? '';
+}
+
+/**
+ * The preload bridge is also exposed to the remote Home Assistant page, so every channel
+ * checks who is calling. Privileged channels only accept the app's own bundled pages.
+ */
+function isTrustedSender(event: SenderEvent, channel: string, allowInstance = false): boolean {
+  const url = senderUrl(event);
+  if (isLocalAppUrl(url) || (allowInstance && isInstanceUrl(url))) return true;
+  logger.warn(`Blocked IPC "${channel}" from untrusted sender: ${url || 'unknown'}`);
+  return false;
+}
+
+function onLocal(channel: string, listener: (event: IpcMainEvent, ...args: any[]) => void): void {
+  ipcMain.on(channel, (event, ...args) => {
+    if (isTrustedSender(event, channel)) listener(event, ...args);
+  });
+}
+
+function handleLocal(channel: string, handler: (event: IpcMainInvokeEvent, ...args: any[]) => unknown): void {
+  ipcMain.handle(channel, (event, ...args) => {
+    if (!isTrustedSender(event, channel)) throw new Error(`Unauthorized IPC sender for "${channel}"`);
+    return handler(event, ...args);
+  });
+}
 
 function registerAll(deps: IpcRegisterDeps): void {
   const {
@@ -25,20 +56,20 @@ function registerAll(deps: IpcRegisterDeps): void {
     forceQuit,
   } = deps;
 
-  ipcMain.on('get-instances', (event) => {
+  onLocal('get-instances', (event) => {
     event.reply('get-instances', config.get('allInstances') || []);
   });
 
-  ipcMain.on('ha-instance', (event, url: string) => {
-    if (url) addInstance(url);
+  onLocal('ha-instance', (event, url: unknown) => {
+    if (isHttpUrl(url)) addInstance(url);
     if (currentInstance()) event.reply('ha-instance', currentInstance());
   });
 
-  ipcMain.on('reconnect', async () => {
+  onLocal('reconnect', async () => {
     await reinitMainWindow();
   });
 
-  ipcMain.on('restart', () => {
+  onLocal('restart', () => {
     app.relaunch();
     app.exit();
   });
@@ -46,20 +77,21 @@ function registerAll(deps: IpcRegisterDeps): void {
   let bonjourFind: { stop: () => void } | null = null;
   let bonjourTimeout: NodeJS.Timeout | null = null;
 
-  ipcMain.on('start-bonjour', (event) => {
+  onLocal('start-bonjour', (event) => {
     if (bonjourFind) bonjourFind.stop();
     if (bonjourTimeout) clearTimeout(bonjourTimeout);
     bonjourFind = (
       bonjour as {
         find: (
           opts: Record<string, unknown>,
-          cb: (instance: { txt: { internal_url: string; external_url: string } }) => void
+          cb: (instance: { txt?: { internal_url?: string; external_url?: string } }) => void
         ) => { stop: () => void };
       }
     ).find({ type: 'home-assistant' }, (instance) => {
+      // Some mDNS responders omit the TXT record entirely.
       event.reply('bonjour-instance', {
-        internal_url: instance.txt.internal_url,
-        external_url: instance.txt.external_url,
+        internal_url: instance.txt?.internal_url,
+        external_url: instance.txt?.external_url,
       });
     });
     bonjourTimeout = setTimeout(() => {
@@ -71,26 +103,29 @@ function registerAll(deps: IpcRegisterDeps): void {
     }, 30_000);
   });
 
-  ipcMain.on('ha-notification', (_event, { title, message }: { title: string; message: string }) => {
+  // Sent by the bridge injected into the Home Assistant page, so the instance origin is allowed too.
+  ipcMain.on('ha-notification', (event, { title, message }: { title: string; message: string }) => {
+    if (!isTrustedSender(event, 'ha-notification', true)) return;
     showNotification(title, message, () => showWindow());
   });
 
   ipcMain.on(
     'desktop-command',
-    (_event, { command, payload }: { command: string; payload: Record<string, unknown> }) => {
+    (event, { command, payload }: { command: string; payload: Record<string, unknown> }) => {
+      if (!isTrustedSender(event, 'desktop-command', true)) return;
       executeCommand(command, payload);
     }
   );
 
-  ipcMain.handle('get-system-stats', async () => {
+  handleLocal('get-system-stats', async () => {
     return SystemMonitor.getStats();
   });
 
-  ipcMain.handle('get-active-window', async () => {
+  handleLocal('get-active-window', async () => {
     return getActiveWindow();
   });
 
-  ipcMain.handle('get-media-status', async () => {
+  handleLocal('get-media-status', async () => {
     const stats = await SystemMonitor.getStats();
     return {
       webcam_active: stats.webcam_active,
@@ -98,7 +133,7 @@ function registerAll(deps: IpcRegisterDeps): void {
     };
   });
 
-  ipcMain.on('settings-open', (event) => {
+  onLocal('settings-open', (event) => {
     event.reply('settings-loaded', {
       haBaseUrl: config.get('haBaseUrl'),
       haToken: config.get('haToken'),
@@ -110,7 +145,7 @@ function registerAll(deps: IpcRegisterDeps): void {
     if (entities.length) event.reply('entities-loaded', entities);
   });
 
-  ipcMain.handle('save-settings', async (_event, { haBaseUrl, haToken }): Promise<SaveSettingsResult> => {
+  handleLocal('save-settings', async (_event, { haBaseUrl, haToken }): Promise<SaveSettingsResult> => {
     try {
       const trimmedUrl = haBaseUrl.trim();
       const trimmedToken = haToken.trim();
@@ -133,7 +168,7 @@ function registerAll(deps: IpcRegisterDeps): void {
     }
   });
 
-  ipcMain.handle('test-connection', async (_event, { haBaseUrl, haToken }): Promise<TestConnectionResult> => {
+  handleLocal('test-connection', async (_event, { haBaseUrl, haToken }): Promise<TestConnectionResult> => {
     try {
       const trimmedUrl = haBaseUrl.trim().replace(/\/$/, '');
       const trimmedToken = haToken.trim();
@@ -152,33 +187,32 @@ function registerAll(deps: IpcRegisterDeps): void {
     }
   });
 
-  ipcMain.handle('save-pinned', async (_event, pinnedEntities: string[]) => {
+  handleLocal('save-pinned', async (_event, pinnedEntities: unknown) => {
+    if (!Array.isArray(pinnedEntities) || !pinnedEntities.every((id) => typeof id === 'string')) {
+      return { ok: false, error: 'Invalid pinned entities: expected an array of entity IDs.' };
+    }
     config.set('pinnedEntities', pinnedEntities);
     return { ok: true };
   });
 
-  ipcMain.handle('get-shortcuts', async () => {
+  handleLocal('get-shortcuts', async () => {
     return shortcutManager.load();
   });
 
-  ipcMain.handle('save-shortcut', async (_event, shortcut) => {
-    if (
-      !shortcut ||
-      typeof shortcut.accelerator !== 'string' ||
-      typeof shortcut.entityId !== 'string'
-    ) {
+  handleLocal('save-shortcut', async (_event, shortcut) => {
+    if (!shortcut || typeof shortcut.accelerator !== 'string' || typeof shortcut.entityId !== 'string') {
       return { ok: false, error: 'Invalid shortcut: accelerator and entityId are required.' };
     }
     shortcutManager.upsert(shortcut);
     return { ok: true };
   });
 
-  ipcMain.handle('remove-shortcut', async (_event, accelerator: string) => {
+  handleLocal('remove-shortcut', async (_event, accelerator: string) => {
     shortcutManager.remove(accelerator);
     return { ok: true };
   });
 
-  ipcMain.handle('export-config', async () => {
+  handleLocal('export-config', async () => {
     const result = await dialog.showSaveDialog({
       title: 'Export Configuration',
       defaultPath: 'homeassistant-desktop-config.json',
@@ -207,7 +241,7 @@ function registerAll(deps: IpcRegisterDeps): void {
     }
   });
 
-  ipcMain.handle('import-config', async () => {
+  handleLocal('import-config', async () => {
     const result = await dialog.showOpenDialog({
       title: 'Import Configuration',
       filters: [{ name: 'JSON', extensions: ['json'] }],
@@ -242,8 +276,11 @@ function registerAll(deps: IpcRegisterDeps): void {
       if (data.shortcuts !== undefined && !Array.isArray(data.shortcuts)) {
         return { ok: false, error: 'Invalid shortcuts: expected array.' };
       }
-      if (data.allInstances !== undefined && !Array.isArray(data.allInstances)) {
-        return { ok: false, error: 'Invalid allInstances: expected array.' };
+      if (
+        data.allInstances !== undefined &&
+        (!Array.isArray(data.allInstances) || !data.allInstances.every(isHttpUrl))
+      ) {
+        return { ok: false, error: 'Invalid allInstances: expected an array of http(s) URLs.' };
       }
 
       const keys = [

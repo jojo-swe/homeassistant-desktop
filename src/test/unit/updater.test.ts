@@ -16,6 +16,10 @@ vi.mock('electron-log', () => ({
   },
 }));
 
+vi.mock('../../main/notifications', () => ({
+  showNotification: vi.fn(),
+}));
+
 vi.mock('../../main/config', () => {
   const store: Record<string, unknown> = { autoUpdate: true };
   return {
@@ -77,23 +81,34 @@ describe('updater', () => {
       expect(getUpdateCheckerInterval()).toBeNull();
     });
 
-    test('update-downloaded handler calls onForceQuit and quitAndInstall', async () => {
+    test('update-downloaded notifies instead of restarting, and restarts only on click', async () => {
       const onForceQuit = vi.fn();
       vi.mocked(autoUpdater.on).mockImplementation((event: string, cb: Function) => {
         if (event === 'update-downloaded') {
-          cb();
+          cb({ version: '2.0.1' });
         }
         return autoUpdater;
       });
       // Reset module state to allow listener registration
       vi.resetModules();
       const { useAutoUpdater: freshUseAutoUpdater } = await import('../../main/updater');
+      const { showNotification: freshShowNotification } = await import('../../main/notifications');
       await freshUseAutoUpdater(onForceQuit);
+
+      expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+      expect(freshShowNotification).toHaveBeenCalledWith(
+        'Update ready',
+        expect.stringContaining('2.0.1'),
+        expect.any(Function)
+      );
+
+      const onClick = vi.mocked(freshShowNotification).mock.calls[0][2]!;
+      onClick();
       expect(onForceQuit).toHaveBeenCalled();
       expect(autoUpdater.quitAndInstall).toHaveBeenCalled();
     });
 
-    test('error handler clears interval', async () => {
+    test('error handler logs but keeps the check schedule', async () => {
       vi.mocked(autoUpdater.on).mockImplementation((event: string, cb: Function) => {
         if (event === 'error') {
           cb(new Error('update error'));
@@ -102,9 +117,25 @@ describe('updater', () => {
       });
       // Reset module state to allow listener registration
       vi.resetModules();
-      const { useAutoUpdater: freshUseAutoUpdater } = await import('../../main/updater');
-      await freshUseAutoUpdater(() => {});
+      const fresh = await import('../../main/updater');
+      await fresh.useAutoUpdater(() => {});
       expect(logger.error).toHaveBeenCalled();
+      expect(fresh.getUpdateCheckerInterval()).not.toBeNull();
+      fresh.clearUpdateInterval();
+    });
+
+    test('a failed check does not stop future checks', async () => {
+      vi.mocked(autoUpdater.checkForUpdates).mockRejectedValueOnce(new Error('offline'));
+      await useAutoUpdater(() => {});
+      expect(logger.error).toHaveBeenCalled();
+      expect(getUpdateCheckerInterval()).not.toBeNull();
+    });
+
+    test('does not check for updates when autoUpdate is disabled', async () => {
+      vi.mocked(config.get).mockReturnValue(false);
+      await useAutoUpdater(() => {});
+      await checkForUpdates();
+      expect(autoUpdater.checkForUpdates).not.toHaveBeenCalled();
     });
   });
 

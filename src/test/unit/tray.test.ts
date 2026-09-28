@@ -91,6 +91,7 @@ function createDeps(): TrayInitDeps {
           show: vi.fn(),
           isVisible: vi.fn(() => false),
           loadURL: vi.fn().mockResolvedValue(undefined),
+          isDestroyed: vi.fn(() => false),
           isAlwaysOnTop: vi.fn(() => false),
           setAlwaysOnTop: vi.fn(),
           webContents: { session: { clearCache: vi.fn(), clearStorageData: vi.fn() } },
@@ -508,6 +509,7 @@ describe('tray', () => {
     test('instance checkbox click switches instance', async () => {
       const mockWindow = {
         loadURL: vi.fn().mockResolvedValue(undefined),
+        isDestroyed: vi.fn(() => false),
         show: vi.fn(),
       };
       vi.mocked(deps.getMainWindow).mockReturnValue(mockWindow as any);
@@ -530,6 +532,7 @@ describe('tray', () => {
     test('add another instance click resets currentInstance', async () => {
       const mockWindow = {
         loadURL: vi.fn().mockResolvedValue(undefined),
+        isDestroyed: vi.fn(() => false),
         show: vi.fn(),
       };
       vi.mocked(deps.getMainWindow).mockReturnValue(mockWindow as any);
@@ -598,6 +601,7 @@ describe('tray', () => {
         show: vi.fn(),
         isVisible: vi.fn(() => false),
         loadURL: vi.fn().mockResolvedValue(undefined),
+        isDestroyed: vi.fn(() => false),
         isAlwaysOnTop: vi.fn(() => false),
         setAlwaysOnTop: vi.fn(),
         webContents: { session: { clearCache: vi.fn(), clearStorageData: vi.fn() } },
@@ -626,6 +630,7 @@ describe('tray', () => {
         show: vi.fn(),
         isVisible: vi.fn(() => false),
         loadURL: vi.fn().mockResolvedValue(undefined),
+        isDestroyed: vi.fn(() => false),
         isAlwaysOnTop: vi.fn(() => false),
         setAlwaysOnTop: vi.fn(),
         webContents: { session: { clearCache: vi.fn(), clearStorageData: vi.fn() } },
@@ -651,6 +656,7 @@ describe('tray', () => {
     test('reset everything clears config and session', async () => {
       const mockWindow = {
         loadURL: vi.fn().mockResolvedValue(undefined),
+        isDestroyed: vi.fn(() => false),
         show: vi.fn(),
         hide: vi.fn(),
         isVisible: vi.fn(() => false),
@@ -731,6 +737,7 @@ describe('tray', () => {
         show: vi.fn(),
         isVisible: vi.fn(() => false),
         loadURL: vi.fn().mockResolvedValue(undefined),
+        isDestroyed: vi.fn(() => false),
         isAlwaysOnTop: vi.fn(() => true),
         setAlwaysOnTop: vi.fn(),
         webContents: { session: { clearCache: vi.fn(), clearStorageData: vi.fn() } },
@@ -763,6 +770,7 @@ describe('tray', () => {
         show: vi.fn(),
         isVisible: vi.fn(() => true),
         loadURL: vi.fn().mockResolvedValue(undefined),
+        isDestroyed: vi.fn(() => false),
         isAlwaysOnTop: vi.fn(() => false),
         setAlwaysOnTop: vi.fn(),
         webContents: { session: { clearCache: vi.fn(), clearStorageData: vi.fn() } },

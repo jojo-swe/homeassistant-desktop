@@ -1,9 +1,10 @@
-import { BrowserWindow, shell, globalShortcut } from 'electron';
+import { BrowserWindow, globalShortcut } from 'electron';
 import logger from 'electron-log';
 import nodePath from 'node:path';
 import config from './config';
 import { currentInstance } from './instances';
 import haNotificationBridge from './haNotificationBridge';
+import { isInstanceUrl, isLocalAppUrl, openExternalSafe } from './urlSafety';
 import type { WindowInitDeps } from './types';
 
 const ACCENT_EXTRACT_JS = `
@@ -60,9 +61,8 @@ async function createMainWindow(show = false): Promise<void> {
     autoHideMenuBar: true,
     frame: process.platform === 'darwin' ? false : undefined,
     titleBarStyle: process.platform !== 'darwin' ? 'hidden' : undefined,
-    titleBarOverlay: process.platform === 'win32'
-      ? { color: 'rgba(0,0,0,0)', symbolColor: '#e8e8f0', height: 40 }
-      : undefined,
+    titleBarOverlay:
+      process.platform === 'win32' ? { color: 'rgba(0,0,0,0)', symbolColor: '#e8e8f0', height: 40 } : undefined,
     transparent: process.platform === 'darwin',
     vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
     backgroundMaterial: process.platform === 'win32' ? 'acrylic' : undefined,
@@ -79,8 +79,17 @@ async function createMainWindow(show = false): Promise<void> {
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    void openExternalSafe(url);
     return { action: 'deny' };
+  });
+
+  // Keep the main window on the app's own pages and the configured HA instances; anything else
+  // (a link on a dashboard, a redirect from an add-on) opens in the system browser instead, so
+  // third-party pages never get access to the preload bridge.
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (isLocalAppUrl(url) || isInstanceUrl(url)) return;
+    event.preventDefault();
+    void openExternalSafe(url);
   });
 
   mainWindow.webContents.on('did-finish-load', async () => {
@@ -195,9 +204,14 @@ async function createMainWindow(show = false): Promise<void> {
 
 async function reinitMainWindow(): Promise<void> {
   logger.info('Re-initialized main window');
-  mainWindow?.destroy();
-  mainWindow = null;
-  await createMainWindow(!config.has('currentInstance'));
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    await createMainWindow(!config.has('currentInstance'));
+    return;
+  }
+  // Reload in place: destroying the only window quits the app on Windows/Linux (window-all-closed).
+  await mainWindow.loadURL(INDEX_FILE).catch((err: Error) => {
+    logger.error('Failed to reload index page:', err.message);
+  });
 }
 
 function showWindow(): void {

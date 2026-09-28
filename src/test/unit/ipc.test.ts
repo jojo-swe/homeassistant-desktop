@@ -115,14 +115,23 @@ function createDeps(): IpcRegisterDeps {
   };
 }
 
+const LOCAL_FRAME = { url: 'file:///app/out/renderer/index.html' };
+
+// Handlers validate the sender; unless a test says otherwise, calls come from a bundled app page.
+function asLocalSender(fn: Function | undefined): Function | undefined {
+  if (!fn) return fn;
+  return (event: Record<string, unknown> | null | undefined, ...args: unknown[]) =>
+    fn({ senderFrame: LOCAL_FRAME, ...(event ?? {}) }, ...args);
+}
+
 function getHandler(channel: string): Function | undefined {
   const call = vi.mocked(ipcMain.on).mock.calls.find((c) => c[0] === channel);
-  return call?.[1];
+  return asLocalSender(call?.[1]);
 }
 
 function getHandle(channel: string): Function | undefined {
   const call = vi.mocked(ipcMain.handle).mock.calls.find((c) => c[0] === channel);
-  return call?.[1];
+  return asLocalSender(call?.[1]);
 }
 
 describe('ipc', () => {
@@ -577,6 +586,70 @@ describe('ipc', () => {
       const result = await handler({}, { haBaseUrl: 'not-a-url', haToken: 'token' });
       expect(result.ok).toBe(false);
       expect(result.error).toContain('Invalid URL format');
+    });
+  });
+
+  describe('sender validation', () => {
+    const REMOTE_FRAME = { url: 'https://evil.example/page' };
+
+    function rawOn(channel: string): Function {
+      return vi.mocked(ipcMain.on).mock.calls.find((c) => c[0] === channel)![1];
+    }
+
+    function rawHandle(channel: string): Function {
+      return vi.mocked(ipcMain.handle).mock.calls.find((c) => c[0] === channel)![1];
+    }
+
+    test('ignores settings-open from a remote page so the token is never sent', () => {
+      registerAll(deps);
+      const reply = vi.fn();
+      rawOn('settings-open')({ reply, senderFrame: REMOTE_FRAME });
+      expect(reply).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Blocked IPC "settings-open"'));
+    });
+
+    test('ignores events with no sender frame', () => {
+      registerAll(deps);
+      const reply = vi.fn();
+      rawOn('get-instances')({ reply, senderFrame: null });
+      expect(reply).not.toHaveBeenCalled();
+    });
+
+    test('rejects invoke channels from a remote page', () => {
+      registerAll(deps);
+      expect(() =>
+        rawHandle('save-settings')({ senderFrame: REMOTE_FRAME }, { haBaseUrl: 'http://x', haToken: 't' })
+      ).toThrow('Unauthorized IPC sender');
+      expect(config.set).not.toHaveBeenCalled();
+    });
+
+    test('accepts desktop-command from the configured instance origin', () => {
+      vi.mocked(config.get).mockReturnValueOnce(['http://ha.local:8123']);
+      registerAll(deps);
+      rawOn('desktop-command')(
+        { senderFrame: { url: 'http://ha.local:8123/lovelace/0' } },
+        { command: 'lock', payload: {} }
+      );
+      expect(executeCommand).toHaveBeenCalledWith('lock', {});
+    });
+
+    test('ignores desktop-command from other origins', () => {
+      vi.mocked(config.get).mockReturnValueOnce(['http://ha.local:8123']);
+      registerAll(deps);
+      rawOn('desktop-command')({ senderFrame: REMOTE_FRAME }, { command: 'lock', payload: {} });
+      expect(executeCommand).not.toHaveBeenCalled();
+    });
+
+    test('ha-instance ignores non-http URLs', () => {
+      registerAll(deps);
+      getHandler('ha-instance')!({ reply: vi.fn() }, 'javascript:alert(1)');
+      expect(deps.addInstance).not.toHaveBeenCalled();
+    });
+
+    test('save-pinned rejects values that are not string arrays', async () => {
+      registerAll(deps);
+      const result = await getHandle('save-pinned')!({}, [{ entity_id: 'light.a' }]);
+      expect(result).toEqual({ ok: false, error: expect.stringContaining('Invalid pinned entities') });
     });
   });
 });
