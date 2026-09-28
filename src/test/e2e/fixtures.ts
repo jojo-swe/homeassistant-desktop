@@ -14,7 +14,7 @@ const ELECTRON_BIN = require('electron') as string;
 const APP_ENTRY = path.join(__dirname, '../../..', 'out/main/index.js');
 const DEBUG_PORT = 9222;
 
-async function waitForPort(port: number, timeoutMs = 30000): Promise<void> {
+async function waitForPort(port: number, child: ChildProcess, timeoutMs = 30000): Promise<void> {
   const start = Date.now();
   return new Promise((resolve, reject) => {
     function tryConnect() {
@@ -23,6 +23,10 @@ async function waitForPort(port: number, timeoutMs = 30000): Promise<void> {
         resolve();
       });
       socket.on('error', () => {
+        if (child.exitCode !== null || child.signalCode !== null) {
+          reject(new Error(`Electron exited before debug port ${port} opened (code: ${child.exitCode}, signal: ${child.signalCode}).`));
+          return;
+        }
         if (Date.now() - start > timeoutMs) {
           reject(new Error(`Port ${port} not ready after ${timeoutMs}ms`));
         } else {
@@ -52,7 +56,7 @@ export const test = base.extend<TestFixture>({
       }
     });
 
-    await waitForPort(DEBUG_PORT);
+    await waitForPort(DEBUG_PORT, child);
     await use(child);
     child.kill('SIGTERM');
     if (!child.killed) child.kill('SIGKILL');
