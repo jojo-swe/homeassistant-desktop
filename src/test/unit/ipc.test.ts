@@ -98,6 +98,9 @@ import { execute as executeCommand } from '../../main/commandReceiver';
 import * as shortcutManager from '../../main/shortcutManager';
 import * as sensorPusher from '../../main/sensorPusher';
 import { registerAll } from '../../main/ipc';
+import { APP_PAGES_DIR } from '../../main/urlSafety';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { IpcRegisterDeps } from '../../main/types';
 
 function createDeps(): IpcRegisterDeps {
@@ -115,7 +118,7 @@ function createDeps(): IpcRegisterDeps {
   };
 }
 
-const LOCAL_FRAME = { url: 'file:///app/out/renderer/index.html' };
+const LOCAL_FRAME = { url: pathToFileURL(path.join(APP_PAGES_DIR, 'index.html')).href };
 
 // Handlers validate the sender; unless a test says otherwise, calls come from a bundled app page.
 function asLocalSender(fn: Function | undefined): Function | undefined {
@@ -606,6 +609,13 @@ describe('ipc', () => {
       rawOn('settings-open')({ reply, senderFrame: REMOTE_FRAME });
       expect(reply).not.toHaveBeenCalled();
       expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Blocked IPC "settings-open"'));
+    });
+
+    test('ignores file: pages outside the bundled app', () => {
+      registerAll(deps);
+      const reply = vi.fn();
+      rawOn('settings-open')({ reply, senderFrame: { url: 'file:///tmp/downloaded.html' } });
+      expect(reply).not.toHaveBeenCalled();
     });
 
     test('ignores events with no sender frame', () => {

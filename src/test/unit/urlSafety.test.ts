@@ -15,7 +15,16 @@ vi.mock('../../main/config', () => ({
 import { shell } from 'electron';
 import logger from 'electron-log';
 import config from '../../main/config';
-import { isHttpUrl, isInstanceUrl, isLocalAppUrl, openExternalSafe } from '../../main/urlSafety';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import {
+  APP_PAGES_DIR,
+  isHttpUrl,
+  isInstanceAuthUrl,
+  isInstanceUrl,
+  isLocalAppUrl,
+  openExternalSafe,
+} from '../../main/urlSafety';
 
 describe('urlSafety', () => {
   beforeEach(() => {
@@ -37,13 +46,32 @@ describe('urlSafety', () => {
   });
 
   describe('isLocalAppUrl', () => {
-    test('accepts bundled file:// pages', () => {
-      expect(isLocalAppUrl('file:///opt/app/resources/app.asar/out/renderer/index.html')).toBe(true);
+    const page = (...parts: string[]) => pathToFileURL(path.join(APP_PAGES_DIR, ...parts)).href;
+
+    test('accepts bundled renderer pages', () => {
+      expect(isLocalAppUrl(page('index.html'))).toBe(true);
+      expect(isLocalAppUrl(page('settings', 'index.html'))).toBe(true);
+      expect(isLocalAppUrl(page('error', 'index.html') + '?x=1#y')).toBe(true);
+    });
+
+    test('rejects other files on disk, including path tricks', () => {
+      expect(isLocalAppUrl('file:///tmp/evil.html')).toBe(false);
+      expect(isLocalAppUrl(pathToFileURL(path.join(APP_PAGES_DIR, '..', 'evil.html')).href)).toBe(false);
+      expect(isLocalAppUrl(pathToFileURL(APP_PAGES_DIR + '-evil/index.html').href)).toBe(false);
+      expect(isLocalAppUrl(pathToFileURL(APP_PAGES_DIR).href)).toBe(false);
     });
 
     test('rejects web pages', () => {
       expect(isLocalAppUrl('https://evil.example/')).toBe(false);
       expect(isLocalAppUrl('')).toBe(false);
+    });
+  });
+
+  describe('isInstanceAuthUrl', () => {
+    test('matches login pages on a configured instance only', () => {
+      expect(isInstanceAuthUrl('http://homeassistant.local:8123/auth/authorize?client_id=x')).toBe(true);
+      expect(isInstanceAuthUrl('http://homeassistant.local:8123/lovelace/0')).toBe(false);
+      expect(isInstanceAuthUrl('https://evil.example/auth/authorize')).toBe(false);
     });
   });
 

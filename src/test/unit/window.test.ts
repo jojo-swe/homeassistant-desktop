@@ -695,6 +695,39 @@ describe('window', () => {
       expect(shell.openExternal).toHaveBeenCalledWith('https://example.com/');
     });
 
+    test('lets an instance login page hand off to an external sign-in provider and back', async () => {
+      const handler = await getWillNavigate();
+      const didNavigate = mockBrowserWindow.webContents.on.mock.calls.find(
+        (c: unknown[]) => c[0] === 'did-navigate'
+      )![1];
+
+      mockBrowserWindow.webContents.getURL.mockReturnValue('http://ha.local:8123/auth/authorize?client_id=x');
+      const toProvider = { preventDefault: vi.fn() };
+      handler(toProvider, 'https://idp.example.com/authorize');
+      expect(toProvider.preventDefault).not.toHaveBeenCalled();
+
+      // Multi-step pages on the provider stay in the window while the login is in progress.
+      mockBrowserWindow.webContents.getURL.mockReturnValue('https://idp.example.com/authorize');
+      const mfa = { preventDefault: vi.fn() };
+      handler(mfa, 'https://mfa.example.net/verify');
+      expect(mfa.preventDefault).not.toHaveBeenCalled();
+
+      // Back on Home Assistant, the guard applies again.
+      didNavigate({}, 'http://ha.local:8123/lovelace/0');
+      mockBrowserWindow.webContents.getURL.mockReturnValue('http://ha.local:8123/lovelace/0');
+      const later = { preventDefault: vi.fn() };
+      handler(later, 'https://example.com/');
+      expect(later.preventDefault).toHaveBeenCalled();
+    });
+
+    test('non-login instance pages cannot start the hand-off', async () => {
+      const handler = await getWillNavigate();
+      mockBrowserWindow.webContents.getURL.mockReturnValue('http://ha.local:8123/lovelace/0');
+      const event = { preventDefault: vi.fn() };
+      handler(event, 'https://idp.example.com/authorize');
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+
     test('window.open never passes non-web schemes to the OS', async () => {
       await getWillNavigate();
       const openHandler = mockBrowserWindow.webContents.setWindowOpenHandler.mock.calls[0][0];

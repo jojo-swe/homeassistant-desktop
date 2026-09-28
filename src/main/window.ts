@@ -4,7 +4,7 @@ import nodePath from 'node:path';
 import config from './config';
 import { currentInstance } from './instances';
 import haNotificationBridge from './haNotificationBridge';
-import { isInstanceUrl, isLocalAppUrl, openExternalSafe } from './urlSafety';
+import { isHttpUrl, isInstanceAuthUrl, isInstanceUrl, isLocalAppUrl, openExternalSafe } from './urlSafety';
 import type { WindowInitDeps } from './types';
 
 const ACCENT_EXTRACT_JS = `
@@ -28,6 +28,9 @@ let initialized = false;
 let resizeEvent: boolean = false;
 let resizeTimeout: NodeJS.Timeout | null = null;
 let isNavigating = false;
+// Set while an instance's login page has handed off to an external sign-in provider (OIDC etc.);
+// cleared once the window is back on the app or an instance.
+let externalAuthInProgress = false;
 
 let _showWindow: () => void;
 let _changePosition: () => void;
@@ -84,12 +87,24 @@ async function createMainWindow(show = false): Promise<void> {
   });
 
   // Keep the main window on the app's own pages and the configured HA instances; anything else
-  // (a link on a dashboard, a redirect from an add-on) opens in the system browser instead, so
-  // third-party pages never get access to the preload bridge.
+  // (a link on a dashboard, an add-on's external link) opens in the system browser instead. The one
+  // exception is a login flow: an instance's /auth/ page may hand off to an external sign-in
+  // provider, which has to complete in this window's session. Remote pages never get privileged
+  // IPC either way (see ipc.ts).
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (isLocalAppUrl(url) || isInstanceUrl(url)) return;
+    const current = mainWindow?.webContents.getURL() ?? '';
+    if (isHttpUrl(url) && (externalAuthInProgress || isInstanceAuthUrl(current))) {
+      externalAuthInProgress = true;
+      return;
+    }
     event.preventDefault();
     void openExternalSafe(url);
+  });
+
+  // Providers usually return to Home Assistant with a server redirect, which doesn't emit will-navigate.
+  mainWindow.webContents.on('did-navigate', (_event, url) => {
+    if (isLocalAppUrl(url) || isInstanceUrl(url)) externalAuthInProgress = false;
   });
 
   mainWindow.webContents.on('did-finish-load', async () => {

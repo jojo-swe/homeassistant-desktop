@@ -27,7 +27,12 @@ if (!hasSingleInstanceLock) {
   app.quit();
 }
 
-app.on('second-instance', () => windowManager.showWindow());
+// A launch that arrives before the window exists is remembered and honoured once startup finishes.
+let showWhenReady = false;
+app.on('second-instance', () => {
+  if (windowManager.getMainWindow()) windowManager.showWindow();
+  else showWhenReady = true;
+});
 
 function isAutostartEnabled(): boolean {
   return app.getLoginItemSettings().openAtLogin;
@@ -99,7 +104,7 @@ async function initializeApp(): Promise<void> {
 
   // The window is created before the tray exists, so on first run show onboarding once the
   // tray is in place to position against.
-  if (isFirstRun) windowManager.showWindow();
+  if (isFirstRun || showWhenReady) windowManager.showWindow();
 
   availabilityChecker.init({
     showError: (isError: boolean) => windowManager.showError(isError),
