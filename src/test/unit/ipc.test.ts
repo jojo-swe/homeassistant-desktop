@@ -86,6 +86,8 @@ vi.mock('../../main/sensorPusher', () => ({
   pushAllSensors: vi.fn(),
 }));
 
+vi.mock('../../main/settingsWindow', () => ({ getSettingsWindow: vi.fn(() => null) }));
+
 import { ipcMain, app, dialog } from 'electron';
 import * as fs from 'fs';
 import logger from 'electron-log';
@@ -97,6 +99,7 @@ import * as haClient from '../../main/haClient';
 import { execute as executeCommand } from '../../main/commandReceiver';
 import * as shortcutManager from '../../main/shortcutManager';
 import * as sensorPusher from '../../main/sensorPusher';
+import { getSettingsWindow } from '../../main/settingsWindow';
 import { registerAll } from '../../main/ipc';
 import type { IpcRegisterDeps } from '../../main/types';
 
@@ -112,6 +115,7 @@ function createDeps(): IpcRegisterDeps {
     currentInstance: vi.fn(() => false as string | false),
     bonjour: { find: vi.fn() },
     forceQuit: vi.fn(),
+    refreshTrayMenu: vi.fn(),
   };
 }
 
@@ -322,6 +326,9 @@ describe('ipc', () => {
         pinnedEntities: ['light.test'],
         theme: 'dark',
         accentColor: '#03a9f4',
+        typeSafeKeyConfigured: false,
+        smartNotificationsEnabled: false,
+        notificationDigest: [],
       });
     });
 
@@ -334,6 +341,23 @@ describe('ipc', () => {
       const handler = getHandler('settings-open')!;
       handler({ reply });
       expect(reply).toHaveBeenCalledWith('entities-loaded', expect.any(Array));
+    });
+  });
+
+  describe('TypeSafe settings', () => {
+    test('only the Settings window can change the API key or activate a scene', async () => {
+      const settingsSender = {};
+      vi.mocked(getSettingsWindow).mockReturnValue({ webContents: settingsSender } as never);
+      registerAll(deps);
+      const save = getHandle('save-typesafe-settings')!;
+      const activate = getHandle('activate-scene')!;
+      const data = { apiKey: 'secret', enabled: true, clearKey: false };
+      expect(await save({ sender: {} }, data)).toMatchObject({ ok: false });
+      expect(await activate({ sender: {} }, 'scene.movie')).toMatchObject({ ok: false });
+      expect(config.set).not.toHaveBeenCalledWith('typeSafeApiKey', 'secret');
+
+      expect(await save({ sender: settingsSender }, data)).toMatchObject({ ok: true });
+      expect(config.set).toHaveBeenCalledWith('typeSafeApiKey', 'secret');
     });
   });
 

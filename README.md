@@ -56,6 +56,13 @@ Your PC securely listens for `desktop_command` events from Home Assistant. Remot
 - Test connection button with feedback
 - Export / import configuration
 
+### TypeSafe AI (optional)
+
+- **Scene selection** — In Settings, describe a mood or activity. TypeSafe chooses from scenes that already exist in your Home Assistant instance. Review the suggestion and click **Activate** to apply it. Unclear requests do not activate a scene.
+- **Smarter notifications** — Enable this in Settings to hold clearly routine Home Assistant persistent notifications in an in-app digest. Urgent and uncertain notifications still appear as native OS notifications. If TypeSafe is unavailable, notifications appear normally. The digest is kept in memory until the app exits; the original notifications remain in Home Assistant.
+
+Get an API key from [TypeSafe](https://console.typesafe.ai/), enter it under **Settings → TypeSafe AI**, and save. The key is stored in the app's local settings and is not included in config exports. When these features run, the scene request and available scene names, or a notification's title and text, are sent to the TypeSafe API. Both features are inactive until configured; notification triage also requires its separate checkbox.
+
 ### Liquid Glass Design System
 
 The v2.0 graphical overhaul introduces a glassmorphism-based design language inspired by Apple's "Liquid Glass" aesthetic:

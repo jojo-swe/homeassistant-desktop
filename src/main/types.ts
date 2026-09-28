@@ -53,6 +53,8 @@ export interface AppConfig {
   allInstances: string[];
   haBaseUrl: string;
   haToken: string;
+  typeSafeApiKey: string;
+  smartNotificationsEnabled: boolean;
   pinnedEntities: string[];
   shortcuts: Shortcut[];
   theme?: 'dark' | 'light';
@@ -108,6 +110,7 @@ export interface IpcRegisterDeps {
   currentInstance: (url?: string | null) => string | false;
   bonjour: unknown;
   forceQuit: () => void;
+  refreshTrayMenu: () => void;
 }
 
 export interface EntityAttributes {

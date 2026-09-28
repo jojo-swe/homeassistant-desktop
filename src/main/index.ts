@@ -84,6 +84,7 @@ async function initializeApp(): Promise<void> {
     forceQuit: () => {
       forceQuit = true;
     },
+    refreshTrayMenu: () => refreshMenu(),
   });
 
   availabilityChecker.init({

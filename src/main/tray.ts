@@ -4,6 +4,7 @@ import config from './config';
 import * as haClient from './haClient';
 import { INDEX_FILE } from './window';
 import type { HAEntity, TrayInitDeps } from './types';
+import { getDigest } from './smartNotifications';
 
 const ICON_WIN = `${__dirname}/../../assets/IconWin.png`;
 const ICON_MAC = `${__dirname}/../../assets/IconTemplate.png`;
@@ -209,6 +210,13 @@ function getMenu(): Menu {
     { visible: process.platform === 'linux', type: 'separator' },
     ...instancesMenu,
     ...quickActionsMenu,
+    {
+      label: `🧠 AI Features${getDigest().length ? ` (${getDigest().length} routine)` : ''}`,
+      submenu: [
+        { label: 'Choose a Scene...', click: () => _openSettingsWindow() },
+        { label: `Routine Notifications (${getDigest().length})`, click: () => _openSettingsWindow() },
+      ],
+    },
     { type: 'separator' },
     {
       label: 'Hover to Show',
