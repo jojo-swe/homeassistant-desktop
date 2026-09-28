@@ -241,7 +241,8 @@ body {
 
 /* ── Status messages ────────────────────────────────────────────────────────── */
 
-.status-msg {
+.status-msg,
+.scene-status-msg {
   font-size: 12px;
   padding: 8px 12px;
   border-radius: 8px;

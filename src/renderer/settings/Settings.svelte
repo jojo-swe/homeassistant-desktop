@@ -393,7 +393,7 @@
         <button class="btn btn-primary" onclick={activateSuggestedScene} disabled={sceneBusy}>Activate {suggestedScene.name}</button>
       {/if}
     </div>
-    <div class="status-msg" aria-live="polite">{sceneStatus}</div>
+    <div class="scene-status-msg" aria-live="polite">{sceneStatus}</div>
 
     <div class="section-title ai-subtitle">Routine notifications ({notificationDigest.length})</div>
     {#if notificationDigest.length === 0}
