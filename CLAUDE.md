@@ -22,7 +22,9 @@ Run `typecheck`, `lint:check`, `format:check` and `npm test` before pushing — 
 - `src/main/` — main process. `index.ts` wires everything up at startup; `window.ts` (main window),
   `tray.ts` (tray + menu), `ipc.ts` (IPC handlers), `config.ts` (electron-store settings),
   `sensorPusher.ts` / `commandReceiver.ts` / `haNotificationBridge.ts` (Home Assistant integration),
-  `updater.ts` (electron-updater), `urlSafety.ts` (URL checks used for navigation / openExternal).
+  `updater.ts` (electron-updater), `urlSafety.ts` (URL checks used for navigation / openExternal),
+  `typeSafeClient.ts` / `sceneSelector.ts` / `smartNotifications.ts` (optional TypeSafe AI features;
+  every failure path must fall back to showing the notification / doing nothing).
 - `src/preload/index.ts` — `window.api` bridge; only channels listed in `src/main/ipc-channels.ts` pass.
 - `src/renderer/` — Svelte pages: `Onboarding.svelte`, `settings/`, `error/`, shared `assets/theme.css`.
 - `src/test/unit|component|packaging` (Vitest), `src/test/e2e` (Playwright over CDP).

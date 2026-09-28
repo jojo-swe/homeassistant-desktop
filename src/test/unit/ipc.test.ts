@@ -667,6 +667,13 @@ describe('ipc', () => {
       expect(executeCommand).toHaveBeenCalledWith('lock', {});
     });
 
+    test('ignores ha-notification from other origins', () => {
+      vi.mocked(config.get).mockReturnValueOnce(['http://ha.local:8123']);
+      registerAll(deps);
+      rawOn('ha-notification')({ senderFrame: REMOTE_FRAME }, { title: 'Spoofed', message: 'x' });
+      expect(showNotification).not.toHaveBeenCalled();
+    });
+
     test('ignores desktop-command from other origins', () => {
       vi.mocked(config.get).mockReturnValueOnce(['http://ha.local:8123']);
       registerAll(deps);

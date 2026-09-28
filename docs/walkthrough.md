@@ -159,6 +159,24 @@ fans, covers, automations and scripts). Pinned entities appear under **⚡ Quick
 menu, where one click toggles them; drag pins in Settings to reorder them. You can also assign
 global keyboard shortcuts that toggle an entity from anywhere.
 
+## 6. Optional AI features (TypeSafe)
+
+Two features use the [TypeSafe](https://console.typesafe.ai/) API. Both are off until you save an API key under
+**⚙ Settings → TypeSafe AI**, and the notification digest also needs its own checkbox.
+
+- **Choose a scene**: describe what you want ("make the living room cozy") and click **Find Scene**. The app
+  only ever suggests one of the scenes that already exist in Home Assistant, and nothing happens until you click
+  **Activate**. If the request is unclear, no scene is suggested.
+- **Routine notification digest**: when enabled, each new persistent notification is classified first. Clearly
+  routine ones ("laundry finished") are collected in the digest in Settings instead of popping up. Anything
+  urgent or uncertain, very long messages, and every case where TypeSafe can't be reached still appear as native
+  notifications immediately. The digest is kept in memory only; the notifications themselves stay in Home
+  Assistant.
+
+**What is sent to TypeSafe:** for a scene request, your request text and the names and entity IDs of your
+scenes; for the digest, the title and text of each new persistent notification. Nothing is sent while the
+features are off. The API key is stored in the app's local settings and is not included in config exports.
+
 ## Troubleshooting
 
 - **Sensors don't appear**: check the URL and token with **Test Only** in Settings. Failed pushes

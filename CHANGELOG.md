@@ -15,6 +15,18 @@ plus fixes for problems found in a pre-release review. Several would have affect
 > the packaging bug fixed here. Download 2.0.0 manually once; later updates install automatically on
 > Windows and Linux (AppImage). The Windows installer upgrades 1.6.0 in place.
 
+### Added
+
+- **AI scene selection (optional, TypeSafe).** In Settings, describe a mood or activity; the app suggests one of
+  your existing Home Assistant scenes and activates it only when you click **Activate**. Unclear requests don't
+  suggest anything.
+- **Smart notification digest (optional, TypeSafe).** Clearly routine persistent notifications can be held in an
+  in-app digest instead of popping up. Urgent or uncertain ones, and any case where TypeSafe can't be reached,
+  still show as native notifications. Off by default; the digest lives in memory until the app quits.
+- Both features need a TypeSafe API key (Settings → TypeSafe AI). The key stays in local settings and is left out
+  of config exports. See [docs/walkthrough.md](docs/walkthrough.md#6-optional-ai-features-typesafe) for what is
+  sent.
+
 ### Security
 
 - **IPC sender validation.** The preload bridge is also exposed to the remote Home Assistant page, and

@@ -42,7 +42,11 @@ async function waitForPort(port: number, child: ChildProcess, timeoutMs = 30000)
       });
       socket.on('error', () => {
         if (child.exitCode !== null || child.signalCode !== null) {
-          reject(new Error(`Electron exited before debug port ${port} opened (code: ${child.exitCode}, signal: ${child.signalCode}).`));
+          reject(
+            new Error(
+              `Electron exited before debug port ${port} opened (code: ${child.exitCode}, signal: ${child.signalCode}).`
+            )
+          );
           return;
         }
         if (Date.now() - start > timeoutMs) {

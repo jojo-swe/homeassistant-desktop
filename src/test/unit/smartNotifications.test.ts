@@ -55,7 +55,9 @@ describe('smartNotifications', () => {
       answers: { needs_immediate_attention: { type: 'noul', noul: 0.01 } },
     });
     const show = vi.fn();
-    await routeNotification('Laundry', 'Finished', show, () => { throw new Error('window closed'); });
+    await routeNotification('Laundry', 'Finished', show, () => {
+      throw new Error('window closed');
+    });
     expect(show).not.toHaveBeenCalled();
     expect(getDigest()).toHaveLength(1);
   });

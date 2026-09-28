@@ -220,6 +220,7 @@ function registerAll(deps: IpcRegisterDeps): void {
     if (clearKey) config.set('typeSafeApiKey', '');
     else if (apiKey.trim()) config.set('typeSafeApiKey', apiKey.trim());
     config.set('smartNotificationsEnabled', enabled && !!config.get('typeSafeApiKey'));
+    refreshTrayMenu();
     return {
       ok: true,
       typeSafeKeyConfigured: !!config.get('typeSafeApiKey'),

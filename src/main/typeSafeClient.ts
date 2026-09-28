@@ -14,7 +14,8 @@ interface TypeSafeResponse {
 }
 
 function isConfigured(): boolean {
-  return !!config.get('typeSafeApiKey')?.trim();
+  const key = config.get('typeSafeApiKey');
+  return typeof key === 'string' && key.trim() !== '';
 }
 
 async function evaluate(state: Record<string, unknown>, questions: Record<string, unknown>): Promise<TypeSafeResponse> {
