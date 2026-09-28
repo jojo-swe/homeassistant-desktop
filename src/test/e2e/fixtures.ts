@@ -1,17 +1,22 @@
 import { test as base, expect, type Page } from '@playwright/test';
 import { chromium } from '@playwright/test';
 import { spawn, type ChildProcess } from 'child_process';
+import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import * as net from 'net';
+import electronPath from 'electron';
 
 export interface TestFixture {
+  /** Settings written to the app's config.json before launch (e.g. a configured instance). */
+  appConfig: Record<string, unknown> | undefined;
   process: ChildProcess;
   page: Page;
   debugPort: number;
 }
 
-// Electron 43 downloads its binary on first require, not during npm install.
-const ELECTRON_BIN = require('electron') as string;
+// In a Node context the `electron` package exports the platform-specific binary path.
+const ELECTRON_BIN = electronPath as unknown as string;
 const APP_ENTRY = path.join(__dirname, '../../..', 'out/main/index.js');
 
 async function findAvailablePort(): Promise<number> {
@@ -51,19 +56,49 @@ async function waitForPort(port: number, child: ChildProcess, timeoutMs = 30000)
   });
 }
 
+/**
+ * The app holds a single-instance lock and the debug port, so the next test can only start once
+ * this process has fully exited. Ask politely first, then force it.
+ */
+async function stopApp(child: ChildProcess, graceMs = 5000): Promise<void> {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  const exited = new Promise<void>((resolve) => child.once('exit', () => resolve()));
+  child.kill('SIGTERM');
+  const timer = setTimeout(() => child.kill('SIGKILL'), graceMs);
+  await exited;
+  clearTimeout(timer);
+}
+
 export const test = base.extend<TestFixture>({
   debugPort: async ({}, use) => {
     await use(await findAvailablePort());
   },
-  process: async ({ debugPort }, use) => {
-    const args = [
-      ...(process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : []),
-      `--remote-debugging-port=${debugPort}`,
-      APP_ENTRY,
-    ];
-    const child = spawn(ELECTRON_BIN, args, {
+  appConfig: [undefined, { option: true }],
+  process: async ({ appConfig, debugPort }, use) => {
+    // Chromium refuses to start as root (e.g. in containers) unless the sandbox is disabled.
+    const sandboxArgs = process.getuid?.() === 0 ? ['--no-sandbox'] : [];
+    // Fresh profile per test: config (electron-store) and localStorage both live under userData,
+    // so without this one test's theme or instance leaks into the next — and into the developer's
+    // real app settings. userData derives from these variables on Linux / Windows / macOS.
+    const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ha-desktop-e2e-'));
+    const profileEnv =
+      process.platform === 'darwin'
+        ? { HOME: profileDir }
+        : process.platform === 'win32'
+          ? { APPDATA: profileDir }
+          : { XDG_CONFIG_HOME: profileDir };
+    if (appConfig) {
+      // Launched as a bare script, the app's userData directory is named "Electron".
+      const userData =
+        process.platform === 'darwin'
+          ? path.join(profileDir, 'Library', 'Application Support', 'Electron')
+          : path.join(profileDir, 'Electron');
+      fs.mkdirSync(userData, { recursive: true });
+      fs.writeFileSync(path.join(userData, 'config.json'), JSON.stringify(appConfig));
+    }
+    const child = spawn(ELECTRON_BIN, [...sandboxArgs, `--remote-debugging-port=${debugPort}`, APP_ENTRY], {
       cwd: path.join(__dirname, '../../..'),
-      env: { ...process.env, NODE_ENV: 'test', ELECTRON_DISABLE_SECURITY_WARNINGS: 'true' },
+      env: { ...process.env, ...profileEnv, NODE_ENV: 'test', ELECTRON_DISABLE_SECURITY_WARNINGS: 'true' },
       stdio: 'pipe',
     });
 
@@ -79,15 +114,8 @@ export const test = base.extend<TestFixture>({
 
     await waitForPort(debugPort, child);
     await use(child);
-    if (child.exitCode === null && child.signalCode === null) {
-      const exited = new Promise<void>((resolve) => child.once('exit', () => resolve()));
-      child.kill('SIGTERM');
-      await Promise.race([exited, new Promise<void>((resolve) => setTimeout(resolve, 1000))]);
-      if (child.exitCode === null && child.signalCode === null) {
-        child.kill('SIGKILL');
-        await exited;
-      }
-    }
+    await stopApp(child);
+    fs.rmSync(profileDir, { recursive: true, force: true });
   },
   page: async ({ process, debugPort }, use) => {
     const browser = await chromium.connectOverCDP(`http://127.0.0.1:${debugPort}`);

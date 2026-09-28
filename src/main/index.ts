@@ -18,11 +18,29 @@ logger.info(`${app.getName()} started`);
 logger.info(`Platform: ${process.platform} ${process.arch}`);
 
 let forceQuit = false;
-let autostartEnabled = false;
 let entityCacheInterval: NodeJS.Timeout | null = null;
 
-function checkAutoStart(): void {
-  autostartEnabled = app.getLoginItemSettings().openAtLogin;
+// A second copy would duplicate the tray icon, sensor pushes and global shortcuts.
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+if (!hasSingleInstanceLock) {
+  logger.info('Another instance is already running — exiting.');
+  app.quit();
+}
+
+// A launch that arrives before the window exists is remembered and honoured once startup finishes.
+let showWhenReady = false;
+app.on('second-instance', () => {
+  if (windowManager.getMainWindow()) windowManager.showWindow();
+  else showWhenReady = true;
+});
+
+function isAutostartEnabled(): boolean {
+  return app.getLoginItemSettings().openAtLogin;
+}
+
+async function refreshEntitiesAndMenu(): Promise<void> {
+  await refreshEntityCache();
+  refreshMenu();
 }
 
 windowManager.init({
@@ -35,36 +53,8 @@ windowManager.init({
 if (process.platform === 'darwin') app.dock?.hide();
 
 async function initializeApp(): Promise<void> {
-  await useAutoUpdater(() => {
-    forceQuit = true;
-  });
-  checkAutoStart();
-
-  await windowManager.createMainWindow(!config.has('currentInstance'));
-
-  const storedAccent = config.get('accentColor');
-  if (storedAccent) windowManager.applyAccentColor(storedAccent);
-
-  createTray({
-    getMainWindow: () => windowManager.getMainWindow()!,
-    showWindow: () => windowManager.showWindow(),
-    toggleFullScreen: () => windowManager.toggleFullScreen(),
-    openSettingsWindow,
-    getCachedEntities,
-    refreshEntityCache,
-    getAutostartEnabled: () => autostartEnabled,
-    getUpdateCheckerInterval,
-    clearUpdateInterval,
-    useAutoUpdater: () =>
-      useAutoUpdater(() => {
-        forceQuit = true;
-      }),
-    forceQuit: () => {
-      forceQuit = true;
-    },
-    isConnected: () => availabilityChecker.isConnected(),
-  });
-
+  // IPC must be ready before the first page loads: onboarding asks for the current instance
+  // while it is still loading, and messages sent before a listener exists are dropped.
   registerAll({
     getMainWindow: () => windowManager.getMainWindow()!,
     showWindow: () => windowManager.showWindow(),
@@ -87,12 +77,47 @@ async function initializeApp(): Promise<void> {
     refreshTrayMenu: () => refreshMenu(),
   });
 
+  const isFirstRun = !config.has('currentInstance');
+  await windowManager.createMainWindow(isFirstRun);
+
+  const storedAccent = config.get('accentColor');
+  if (storedAccent) windowManager.applyAccentColor(storedAccent);
+
+  createTray({
+    getMainWindow: () => windowManager.getMainWindow()!,
+    showWindow: () => windowManager.showWindow(),
+    toggleFullScreen: () => windowManager.toggleFullScreen(),
+    openSettingsWindow,
+    getCachedEntities,
+    refreshEntityCache: refreshEntitiesAndMenu,
+    getAutostartEnabled: isAutostartEnabled,
+    getUpdateCheckerInterval,
+    clearUpdateInterval,
+    useAutoUpdater: () =>
+      useAutoUpdater(() => {
+        forceQuit = true;
+      }),
+    forceQuit: () => {
+      forceQuit = true;
+    },
+    isConnected: () => availabilityChecker.isConnected(),
+  });
+
+  // The window is created before the tray exists, so on first run show onboarding once the
+  // tray is in place to position against.
+  if (isFirstRun || showWhenReady) windowManager.showWindow();
+
   availabilityChecker.init({
     showError: (isError: boolean) => windowManager.showError(isError),
     onStatusChange: () => refreshMenu(),
   });
 
   if (config.get('shortcutEnabled')) windowManager.registerKeyboardShortcut();
+  config.onDidChange('shortcutEnabled', (enabled) => {
+    if (enabled) windowManager.registerKeyboardShortcut();
+    else windowManager.unregisterKeyboardShortcut();
+  });
+  config.onDidChange('pinnedEntities', () => refreshMenu());
   const fullscreenRegistered = globalShortcut.register('CommandOrControl+Alt+Return', () =>
     windowManager.toggleFullScreen()
   );
@@ -106,16 +131,29 @@ async function initializeApp(): Promise<void> {
 
   sensorPusher.init(30_000);
 
-  await refreshEntityCache();
-  entityCacheInterval = setInterval(refreshEntityCache, 60 * 1000);
+  // Network-bound; don't hold up startup.
+  void useAutoUpdater(() => {
+    forceQuit = true;
+  });
+
+  await refreshEntitiesAndMenu();
+  entityCacheInterval = setInterval(refreshEntitiesAndMenu, 60 * 1000);
 }
 
-app
-  .whenReady()
-  .then(initializeApp)
-  .catch((err) => {
-    logger.error('Failed to initialize application:', err);
-  });
+if (hasSingleInstanceLock) {
+  app
+    .whenReady()
+    .then(initializeApp)
+    .catch((err) => {
+      logger.error('Failed to initialize application:', err);
+    });
+}
+
+// Closing the main window only hides it; an explicit quit (menu, OS logout, installer, SIGTERM)
+// must be allowed through.
+app.on('before-quit', () => {
+  forceQuit = true;
+});
 
 app.on('will-quit', () => {
   windowManager.unregisterKeyboardShortcut();
@@ -129,6 +167,5 @@ app.on('will-quit', () => {
   }
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
+// Tray app: keep running when no windows are open. Quitting is explicit (tray menu / OS).
+app.on('window-all-closed', () => {});

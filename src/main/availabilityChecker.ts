@@ -6,6 +6,8 @@ import { currentInstance } from './instances';
 
 let availabilityCheckerInterval: NodeJS.Timeout | null = null;
 let bonjour: Bonjour | null = null;
+// Only one discovery browser at a time; checks run every few seconds while an instance is down.
+let bonjourBrowser: { stop: () => void } | null = null;
 let connected = false;
 let currentDeps: AvailabilityDeps | null = null;
 
@@ -29,6 +31,8 @@ function stop(): void {
     clearInterval(availabilityCheckerInterval);
     availabilityCheckerInterval = null;
   }
+  bonjourBrowser?.stop();
+  bonjourBrowser = null;
   currentDeps = null;
 }
 
@@ -83,7 +87,8 @@ function checkForAvailableInstance(): void {
 
   if (!bonjour) bonjour = new Bonjour();
 
-  bonjour.find({ type: 'home-assistant' }, (instance) => {
+  bonjourBrowser?.stop();
+  bonjourBrowser = bonjour.find({ type: 'home-assistant' }, (instance) => {
     const internalUrl = instance.txt?.internal_url;
     const externalUrl = instance.txt?.external_url;
     if (internalUrl && instances.indexOf(internalUrl) !== -1) return currentInstance(internalUrl);

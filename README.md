@@ -89,13 +89,32 @@ The v2.0 graphical overhaul introduces a glassmorphism-based design language ins
 
 ## 📥 Installation
 
-Download the latest version for your platform from the [Releases section](https://github.com/jojo-swe/homeassistant-desktop/releases/latest).
+Download the latest version for your platform from the [Releases section](https://github.com/jojo-swe/homeassistant-desktop/releases/latest):
 
-Automatic updates are bundled and will seamlessly pull newer binaries from GitHub Releases automatically.
+| Platform              | File                                                                       |
+| --------------------- | -------------------------------------------------------------------------- |
+| Windows (x64 / ARM64) | `…-win.exe` installer (both architectures), or `…-win-<arch>-portable.exe` |
+| macOS                 | `…-mac-arm64.dmg` (Apple Silicon) or `…-mac-x64.dmg` (Intel)               |
+| Linux                 | `.AppImage`, `.deb` or `.rpm` for `x86_64`/`amd64` or `arm64`/`aarch64`    |
 
-## 📋 Telemetry & Home Assistant Integration
+The builds are not code-signed yet:
 
-You can fetch the desktop sensors (CPU, Active Window, Webcam) from the Home Assistant dashboard using Webhooks or directly evaluating them using local commandline REST sensors pointing to the app's internal IP endpoints, depending on your network topology. See the accompanying `walkthrough.md` or Wiki for configuration recipes.
+- **Windows**: SmartScreen may warn about an unrecognized app. Choose **More info → Run anyway**.
+- **macOS**: if macOS says the app is damaged or can't be opened, run
+  `xattr -cr "/Applications/Home Assistant Desktop.app"` once after installing.
+
+The Windows installer and the Linux AppImage update themselves from GitHub Releases: new versions
+download in the background and install when you quit the app. Automatic updates can be turned off from
+the tray menu. macOS requires signed apps for in-place updates, so on macOS download new versions
+manually for now.
+
+## 📋 Home Assistant Integration
+
+With a long-lived access token saved in **Settings**, the app pushes your computer's CPU, memory,
+battery, activity, webcam/microphone and active-window state to Home Assistant as sensors. It shows
+Home Assistant notifications natively, and it runs commands (lock, sleep, mute, open URL,
+notification) that automations send as a `desktop_command` event. See
+[docs/walkthrough.md](docs/walkthrough.md) for the entity list and example automations.
 
 ## 🔧 Development
 
@@ -140,15 +159,28 @@ npm run build
 | electron-updater   | 6                      |
 | Renderer framework | Svelte 5               |
 | Build tool         | electron-vite 3        |
-| Unit tests         | Vitest (342 tests)     |
-| E2E tests          | Playwright (28 tests)  |
+| Unit tests         | Vitest (389 tests)     |
+| E2E tests          | Playwright (31 tests)  |
 | Linter             | ESLint 9 (flat config) |
 | Formatter          | Prettier 3             |
 | Language           | TypeScript (strict)    |
 
 ## 🗺️ Roadmap
 
-### v2.0.0-beta.1 (Current — July 2026)
+### v2.0.0 (Current — September 2026)
+
+First stable release of the 2.x line. See [CHANGELOG.md](./CHANGELOG.md#200---2026-09-28) for details.
+
+- ✅ Home Assistant loads on startup for configured users (IPC startup race fixed)
+- ✅ IPC sender validation: remote pages can no longer read the access token or change settings
+- ✅ Main window stays on your Home Assistant instances; other links open in the browser
+- ✅ Auto-update fixed on Windows and Linux (asset names, per-architecture update manifests)
+- ✅ Updates install on quit instead of restarting mid-use; the Automatic Updates setting is respected
+- ✅ Pinned Quick Actions save correctly; Reconnect no longer quits the app
+- ✅ Single-instance lock; OS logout/shutdown can quit the app
+- ✅ E2E suite running in CI; lint and format checks in CI
+
+### v2.0.0-beta.1 (July 2026)
 
 - ✅ Glassmorphism design system with translucent surfaces, backdrop blur, depth-based hierarchy
 - ✅ Native window vibrancy (macOS `under-window`, Windows 11 `acrylic`, Linux CSS fallback)

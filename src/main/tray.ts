@@ -1,8 +1,9 @@
-import { Tray, Menu, app, screen, shell, dialog, BrowserWindow, type MenuItemConstructorOptions } from 'electron';
+import { Tray, Menu, app, screen, dialog, BrowserWindow, type MenuItemConstructorOptions } from 'electron';
 import Positioner from 'electron-traywindow-positioner';
 import config from './config';
 import * as haClient from './haClient';
 import { INDEX_FILE } from './window';
+import { openExternalSafe } from './urlSafety';
 import type { HAEntity, TrayInitDeps } from './types';
 import { getDigest } from './smartNotifications';
 
@@ -97,9 +98,13 @@ function setWindowFocusTimer(): void {
   }, 110);
 }
 
-function getMenu(): Menu {
-  const mainWindow = _getMainWindow();
+/** Resolved on every click: the menu outlives window re-creation, so never capture the window. */
+function liveMainWindow(): BrowserWindow | null {
+  const win = _getMainWindow();
+  return win && !win.isDestroyed() ? win : null;
+}
 
+function getMenu(): Menu {
   const getCurrentInstance = (): string | false => {
     if (config.has('currentInstance')) {
       const idx = config.get('currentInstance');
@@ -115,7 +120,7 @@ function getMenu(): Menu {
       enabled: !!getCurrentInstance(),
       click: async () => {
         const inst = getCurrentInstance();
-        if (inst) await shell.openExternal(inst);
+        if (inst) await openExternalSafe(inst);
       },
     },
     { type: 'separator' },
@@ -130,6 +135,7 @@ function getMenu(): Menu {
         checked: getCurrentInstance() === e,
         click: async () => {
           config.set('currentInstance', config.get('allInstances').indexOf(e));
+          const mainWindow = liveMainWindow();
           if (mainWindow) {
             await mainWindow.loadURL(e);
             mainWindow.show();
@@ -144,6 +150,7 @@ function getMenu(): Menu {
         label: 'Add another Instance...',
         click: async () => {
           config.delete('currentInstance');
+          const mainWindow = liveMainWindow();
           if (mainWindow) {
             await mainWindow.loadURL(INDEX_FILE);
             mainWindow.show();
@@ -202,6 +209,7 @@ function getMenu(): Menu {
       label: 'Show/Hide Window',
       visible: process.platform === 'linux',
       click: () => {
+        const mainWindow = liveMainWindow();
         if (mainWindow) {
           mainWindow.isVisible() ? mainWindow.hide() : _showWindow();
         }
@@ -232,6 +240,7 @@ function getMenu(): Menu {
       checked: config.get('stayOnTop'),
       click: () => {
         config.set('stayOnTop', !config.get('stayOnTop'));
+        const mainWindow = liveMainWindow();
         if (mainWindow) {
           mainWindow.setAlwaysOnTop(config.get('stayOnTop'));
           if (mainWindow.isAlwaysOnTop()) _showWindow();
@@ -262,7 +271,7 @@ function getMenu(): Menu {
       checked: config.get('detachedMode'),
       click: async () => {
         config.set('detachedMode', !config.get('detachedMode'));
-        mainWindow?.hide();
+        liveMainWindow()?.hide();
       },
     },
     {
@@ -314,7 +323,7 @@ function getMenu(): Menu {
     },
     {
       label: 'Open on github.com',
-      click: async () => shell.openExternal('https://github.com/jojo-swe/homeassistant-desktop'),
+      click: async () => openExternalSafe('https://github.com/jojo-swe/homeassistant-desktop'),
     },
     { type: 'separator' },
     { label: '⚙ Settings', click: () => _openSettingsWindow() },
@@ -344,6 +353,7 @@ function getMenu(): Menu {
             if (res.response !== 2) {
               if (res.response === 0) {
                 config.clear();
+                const mainWindow = liveMainWindow();
                 if (mainWindow) {
                   await mainWindow.webContents.session.clearCache();
                   await mainWindow.webContents.session.clearStorageData();

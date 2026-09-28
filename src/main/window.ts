@@ -1,9 +1,10 @@
-import { BrowserWindow, shell, globalShortcut } from 'electron';
+import { BrowserWindow, globalShortcut } from 'electron';
 import logger from 'electron-log';
 import nodePath from 'node:path';
 import config from './config';
 import { currentInstance } from './instances';
 import haNotificationBridge from './haNotificationBridge';
+import { isHttpUrl, isInstanceAuthUrl, isInstanceUrl, isLocalAppUrl, openExternalSafe } from './urlSafety';
 import type { WindowInitDeps } from './types';
 
 const ACCENT_EXTRACT_JS = `
@@ -27,6 +28,9 @@ let initialized = false;
 let resizeEvent: boolean = false;
 let resizeTimeout: NodeJS.Timeout | null = null;
 let isNavigating = false;
+// Set while an instance's login page has handed off to an external sign-in provider (OIDC etc.);
+// cleared once the window is back on the app or an instance.
+let externalAuthInProgress = false;
 
 let _showWindow: () => void;
 let _changePosition: () => void;
@@ -60,9 +64,8 @@ async function createMainWindow(show = false): Promise<void> {
     autoHideMenuBar: true,
     frame: process.platform === 'darwin' ? false : undefined,
     titleBarStyle: process.platform !== 'darwin' ? 'hidden' : undefined,
-    titleBarOverlay: process.platform === 'win32'
-      ? { color: 'rgba(0,0,0,0)', symbolColor: '#e8e8f0', height: 40 }
-      : undefined,
+    titleBarOverlay:
+      process.platform === 'win32' ? { color: 'rgba(0,0,0,0)', symbolColor: '#e8e8f0', height: 40 } : undefined,
     transparent: process.platform === 'darwin',
     vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
     backgroundMaterial: process.platform === 'win32' ? 'acrylic' : undefined,
@@ -79,8 +82,29 @@ async function createMainWindow(show = false): Promise<void> {
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    void openExternalSafe(url);
     return { action: 'deny' };
+  });
+
+  // Keep the main window on the app's own pages and the configured HA instances; anything else
+  // (a link on a dashboard, an add-on's external link) opens in the system browser instead. The one
+  // exception is a login flow: an instance's /auth/ page may hand off to an external sign-in
+  // provider, which has to complete in this window's session. Remote pages never get privileged
+  // IPC either way (see ipc.ts).
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (isLocalAppUrl(url) || isInstanceUrl(url)) return;
+    const current = mainWindow?.webContents.getURL() ?? '';
+    if (isHttpUrl(url) && (externalAuthInProgress || isInstanceAuthUrl(current))) {
+      externalAuthInProgress = true;
+      return;
+    }
+    event.preventDefault();
+    void openExternalSafe(url);
+  });
+
+  // Providers usually return to Home Assistant with a server redirect, which doesn't emit will-navigate.
+  mainWindow.webContents.on('did-navigate', (_event, url) => {
+    if (isLocalAppUrl(url) || isInstanceUrl(url)) externalAuthInProgress = false;
   });
 
   mainWindow.webContents.on('did-finish-load', async () => {
@@ -195,9 +219,14 @@ async function createMainWindow(show = false): Promise<void> {
 
 async function reinitMainWindow(): Promise<void> {
   logger.info('Re-initialized main window');
-  mainWindow?.destroy();
-  mainWindow = null;
-  await createMainWindow(!config.has('currentInstance'));
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    await createMainWindow(!config.has('currentInstance'));
+    return;
+  }
+  // Reload in place: destroying the only window quits the app on Windows/Linux (window-all-closed).
+  await mainWindow.loadURL(INDEX_FILE).catch((err: Error) => {
+    logger.error('Failed to reload index page:', err.message);
+  });
 }
 
 function showWindow(): void {

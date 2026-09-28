@@ -9,7 +9,7 @@ declare module 'bonjour-service' {
   }
 
   export class Bonjour {
-    find(opts: Record<string, unknown>, cb: (service: Service) => void): void;
+    find(opts: Record<string, unknown>, cb: (service: Service) => void): { stop(): void };
     destroy(): void;
   }
 }

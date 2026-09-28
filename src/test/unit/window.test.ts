@@ -640,7 +640,7 @@ describe('window', () => {
   });
 
   describe('reinitMainWindow', () => {
-    test('destroys and recreates the window', async () => {
+    test('reloads the onboarding page in the existing window instead of destroying it', async () => {
       windowManager.init({
         showWindow: vi.fn(),
         changePosition: vi.fn(),
@@ -648,8 +648,91 @@ describe('window', () => {
         forceQuit: vi.fn(() => false),
       });
       await windowManager.createMainWindow(false);
+      mockBrowserWindow.loadURL.mockClear();
       await windowManager.reinitMainWindow();
-      expect(mockBrowserWindow.destroy).toHaveBeenCalled();
+      expect(mockBrowserWindow.destroy).not.toHaveBeenCalled();
+      expect(mockBrowserWindow.loadURL).toHaveBeenCalledWith(windowManager.INDEX_FILE);
+    });
+  });
+
+  describe('navigation guard', () => {
+    async function getWillNavigate(): Promise<Function> {
+      windowManager.init({
+        showWindow: vi.fn(),
+        changePosition: vi.fn(),
+        toggleFullScreen: vi.fn(),
+        forceQuit: vi.fn(() => false),
+      });
+      await windowManager.createMainWindow(false);
+      const call = mockBrowserWindow.webContents.on.mock.calls.find((c: unknown[]) => c[0] === 'will-navigate');
+      return call![1];
+    }
+
+    beforeEach(() => {
+      vi.mocked(config.get).mockImplementation(((key: string) =>
+        key === 'allInstances' ? ['http://ha.local:8123'] : undefined) as never);
+    });
+
+    test('allows navigation to the configured instance', async () => {
+      const handler = await getWillNavigate();
+      const event = { preventDefault: vi.fn() };
+      handler(event, 'http://ha.local:8123/lovelace/0');
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    test('allows navigation to bundled app pages', async () => {
+      const handler = await getWillNavigate();
+      const event = { preventDefault: vi.fn() };
+      handler(event, windowManager.INDEX_FILE);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    test('opens third-party sites externally instead of in the app window', async () => {
+      const handler = await getWillNavigate();
+      const event = { preventDefault: vi.fn() };
+      handler(event, 'https://example.com/');
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(shell.openExternal).toHaveBeenCalledWith('https://example.com/');
+    });
+
+    test('lets an instance login page hand off to an external sign-in provider and back', async () => {
+      const handler = await getWillNavigate();
+      const didNavigate = mockBrowserWindow.webContents.on.mock.calls.find(
+        (c: unknown[]) => c[0] === 'did-navigate'
+      )![1];
+
+      mockBrowserWindow.webContents.getURL.mockReturnValue('http://ha.local:8123/auth/authorize?client_id=x');
+      const toProvider = { preventDefault: vi.fn() };
+      handler(toProvider, 'https://idp.example.com/authorize');
+      expect(toProvider.preventDefault).not.toHaveBeenCalled();
+
+      // Multi-step pages on the provider stay in the window while the login is in progress.
+      mockBrowserWindow.webContents.getURL.mockReturnValue('https://idp.example.com/authorize');
+      const mfa = { preventDefault: vi.fn() };
+      handler(mfa, 'https://mfa.example.net/verify');
+      expect(mfa.preventDefault).not.toHaveBeenCalled();
+
+      // Back on Home Assistant, the guard applies again.
+      didNavigate({}, 'http://ha.local:8123/lovelace/0');
+      mockBrowserWindow.webContents.getURL.mockReturnValue('http://ha.local:8123/lovelace/0');
+      const later = { preventDefault: vi.fn() };
+      handler(later, 'https://example.com/');
+      expect(later.preventDefault).toHaveBeenCalled();
+    });
+
+    test('non-login instance pages cannot start the hand-off', async () => {
+      const handler = await getWillNavigate();
+      mockBrowserWindow.webContents.getURL.mockReturnValue('http://ha.local:8123/lovelace/0');
+      const event = { preventDefault: vi.fn() };
+      handler(event, 'https://idp.example.com/authorize');
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+
+    test('window.open never passes non-web schemes to the OS', async () => {
+      await getWillNavigate();
+      const openHandler = mockBrowserWindow.webContents.setWindowOpenHandler.mock.calls[0][0];
+      expect(openHandler({ url: 'smb://attacker/share' } as any).action).toBe('deny');
+      expect(shell.openExternal).not.toHaveBeenCalled();
     });
   });
 

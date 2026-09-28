@@ -247,14 +247,14 @@
       await unpin(entityId);
     } else {
       pinnedIds.push(entityId);
-      await window.api.invoke('save-pinned', pinnedIds);
+      await window.api.invoke('save-pinned', $state.snapshot(pinnedIds));
       filterEntities();
     }
   }
 
   async function unpin(entityId: string): Promise<void> {
     pinnedIds = pinnedIds.filter((id) => id !== entityId);
-    await window.api.invoke('save-pinned', pinnedIds);
+    await window.api.invoke('save-pinned', $state.snapshot(pinnedIds));
     filterEntities();
   }
 
@@ -277,7 +277,7 @@
     reordered.splice(index, 0, moved);
     pinnedIds = reordered;
     dragIndex = null;
-    await window.api.invoke('save-pinned', pinnedIds);
+    await window.api.invoke('save-pinned', $state.snapshot(pinnedIds));
   }
 
   function onPinDragEnd(): void {

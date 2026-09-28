@@ -21,12 +21,19 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Check formatting
+        run: npm run format:check
 
       - name: Test with coverage
         run: npm run test:coverage
@@ -43,9 +50,10 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build (electron-vite)
         run: npm run build:dir
@@ -62,14 +70,23 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Install Electron system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 xdg-utils libatspi2.0-0 libdrm2 libgbm1
+
+      # Ubuntu 24.04 blocks unprivileged user namespaces, so Chromium falls back to the setuid
+      # sandbox helper, which npm can't install with the required owner/mode.
+      - name: Configure Electron sandbox helper
+        run: |
+          node node_modules/electron/install.js
+          sudo chown root:root node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
 
       - name: Build and run E2E tests
         run: xvfb-run -a npm run test:e2e

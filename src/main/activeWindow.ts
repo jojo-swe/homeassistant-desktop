@@ -24,10 +24,11 @@ $hwnd = [Win32]::GetForegroundWindow()
 $sb = New-Object System.Text.StringBuilder(256)
 [Win32]::GetWindowText($hwnd, $sb, 256) | Out-Null
 $title = $sb.ToString()
-$pid = 0
-[Win32]::GetWindowThreadProcessId($hwnd, [ref]$pid) | Out-Null
+# Not $pid: that is PowerShell's own read-only process id.
+[uint32]$procId = 0
+[Win32]::GetWindowThreadProcessId($hwnd, [ref]$procId) | Out-Null
 $proc = ""
-if ($pid -ne 0) { $p = Get-Process -Id $pid -ErrorAction SilentlyContinue; if ($p) { $proc = $p.Name } }
+if ($procId -ne 0) { $p = Get-Process -Id $procId -ErrorAction SilentlyContinue; if ($p) { $proc = $p.Name } }
 Write-Output "$proc|$title"
 `;
 

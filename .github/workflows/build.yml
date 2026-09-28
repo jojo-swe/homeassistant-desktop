@@ -1,29 +1,48 @@
-name: Build beta binaries
+name: Build & release
 
 on:
   push:
     branches: [master]
     tags:
       - 'v*'
+  # Full packaging build for PRs that can affect the installers or update manifests (never publishes).
+  pull_request:
+    branches: [master]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/build.yml'
+      - 'scripts/**'
+      - 'build/**'
+      - 'assets/**'
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'Publish a GitHub release for the version in package.json (creates the v<version> tag on this commit)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 concurrency:
   group: desktop-build-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseded branch/PR builds are cancelled; never cancel a run that may be publishing a release.
+  cancel-in-progress: ${{ github.ref_type == 'branch' && github.event_name != 'workflow_dispatch' }}
 
 jobs:
   validate:
     name: Validate source
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      publish: ${{ steps.version.outputs.publish }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -31,8 +50,46 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Resolve version and release mode
+        id: version
+        env:
+          RELEASE_INPUT: ${{ inputs.release }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          PUBLISH=false
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            if [ "$GITHUB_REF_NAME" != "v$VERSION" ]; then
+              echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $VERSION"
+              exit 1
+            fi
+            PUBLISH=true
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$RELEASE_INPUT" = "true" ]; then
+            if [ "$GITHUB_REF" != "refs/heads/master" ]; then
+              echo "::error::Releases can only be published from master (got $GITHUB_REF)"
+              exit 1
+            fi
+            if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" > /dev/null; then
+              echo "::error::Tag v$VERSION already exists — bump the version in package.json first"
+              exit 1
+            fi
+            PUBLISH=true
+          fi
+          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+          echo "Version $VERSION, publish=$PUBLISH"
+
+      - name: Check release notes exist
+        if: steps.version.outputs.publish == 'true'
+        run: node scripts/release-notes.cjs "${{ steps.version.outputs.version }}" > /dev/null
+
       - name: Type-check
         run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Check formatting
+        run: npm run format:check
 
       - name: Run tests
         run: npm test
@@ -44,22 +101,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Windows x64
+          # Windows and macOS build both architectures in one job so electron-builder writes a single
+          # latest.yml / latest-mac.yml covering both; separate jobs would overwrite each other's.
+          - name: Windows (x64 + arm64)
             os: windows-latest
-            arch: x64
-            artifact: windows-x64
-          - name: Windows ARM64
-            os: windows-latest
-            arch: arm64
-            artifact: windows-arm64
-          - name: macOS Intel
-            os: macos-15-intel
-            arch: x64
-            artifact: macos-x64
-          - name: macOS Apple Silicon
+            artifact: windows
+          - name: macOS (Intel + Apple Silicon)
             os: macos-15
-            arch: arm64
-            artifact: macos-arm64
+            artifact: macos
+          # Linux manifests are already per-arch (latest-linux.yml / latest-linux-arm64.yml).
           - name: Linux x64
             os: ubuntu-latest
             arch: x64
@@ -73,10 +123,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -96,13 +146,13 @@ jobs:
       - name: Package Windows
         if: runner.os == 'Windows'
         shell: pwsh
-        run: npx electron-builder --win nsis zip portable --${{ matrix.arch }} --publish never
+        run: npx electron-builder --win nsis zip portable --x64 --arm64 --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Package macOS
         if: runner.os == 'macOS'
-        run: npx electron-builder --mac dmg zip --${{ matrix.arch }} --publish never
+        run: npx electron-builder --mac dmg zip --x64 --arm64 --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
@@ -121,28 +171,42 @@ jobs:
             dist/*.AppImage
             dist/*.deb
             dist/*.rpm
-            dist/*.yml
-            dist/*.yaml
+            dist/latest*.yml
             dist/*.blockmap
           if-no-files-found: error
           retention-days: 30
 
   release:
-    name: Publish GitHub beta release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    name: Publish GitHub release
+    if: needs.validate.outputs.publish == 'true'
+    needs: [validate, build]
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
       - name: Download all binaries
         uses: actions/download-artifact@v4
         with:
           pattern: home-assistant-desktop-*
-          path: release-assets
-          merge-multiple: true
+          path: artifacts
 
-      - name: Publish release assets
+      - name: Collect assets and verify update manifests
+        run: node scripts/prepare-release-assets.cjs artifacts release-assets
+
+      - name: Extract release notes
+        run: node scripts/release-notes.cjs "$VERSION" > release-notes.md
+
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          generate_release_notes: true
-          files: release-assets/**
+          tag_name: v${{ env.VERSION }}
+          target_commitish: ${{ github.sha }}
+          name: v${{ env.VERSION }}
+          body_path: release-notes.md
+          prerelease: ${{ contains(env.VERSION, '-') }}
+          make_latest: ${{ !contains(env.VERSION, '-') }}
+          fail_on_unmatched_files: true
+          files: release-assets/*

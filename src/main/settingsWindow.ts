@@ -21,9 +21,8 @@ function openSettingsWindow(): void {
     skipTaskbar: false,
     frame: process.platform === 'darwin' ? false : undefined,
     titleBarStyle: process.platform !== 'darwin' ? 'hidden' : undefined,
-    titleBarOverlay: process.platform === 'win32'
-      ? { color: 'rgba(0,0,0,0)', symbolColor: '#e8e8f0', height: 40 }
-      : undefined,
+    titleBarOverlay:
+      process.platform === 'win32' ? { color: 'rgba(0,0,0,0)', symbolColor: '#e8e8f0', height: 40 } : undefined,
     transparent: process.platform === 'darwin',
     vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
     backgroundMaterial: process.platform === 'win32' ? 'acrylic' : undefined,
