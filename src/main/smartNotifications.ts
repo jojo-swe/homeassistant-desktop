@@ -56,7 +56,11 @@ async function routeNotification(
     }
     digest.unshift({ title, message, receivedAt: new Date().toISOString() });
     digest.splice(50);
-    onDigestUpdated();
+    try {
+      onDigestUpdated();
+    } catch {
+      // The item is already in the digest; a closed Settings window must not duplicate it as a toast.
+    }
   } catch {
     // A network or model failure must not hide a Home Assistant notification.
     showNow();

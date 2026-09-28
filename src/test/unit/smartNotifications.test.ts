@@ -49,4 +49,14 @@ describe('smartNotifications', () => {
     expect(show).toHaveBeenCalledOnce();
     expect(evaluate).not.toHaveBeenCalled();
   });
+
+  test('does not show a queued item if refreshing the digest UI fails', async () => {
+    vi.mocked(evaluate).mockResolvedValue({
+      answers: { needs_immediate_attention: { type: 'noul', noul: 0.01 } },
+    });
+    const show = vi.fn();
+    await routeNotification('Laundry', 'Finished', show, () => { throw new Error('window closed'); });
+    expect(show).not.toHaveBeenCalled();
+    expect(getDigest()).toHaveLength(1);
+  });
 });
