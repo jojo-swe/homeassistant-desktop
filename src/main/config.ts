@@ -13,6 +13,8 @@ const store = new Store<AppConfig>({
     allInstances: [],
     haBaseUrl: '',
     haToken: '',
+    typeSafeApiKey: '',
+    smartNotificationsEnabled: false,
     pinnedEntities: [],
     shortcuts: [] as Shortcut[],
     theme: 'dark' as 'dark' | 'light',

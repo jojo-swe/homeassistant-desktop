@@ -5,6 +5,8 @@ import * as haClient from './haClient';
 import { INDEX_FILE } from './window';
 import { openExternalSafe } from './urlSafety';
 import type { HAEntity, TrayInitDeps } from './types';
+import { getDigest } from './smartNotifications';
+import { isConfigured as isTypeSafeConfigured } from './typeSafeClient';
 
 const ICON_WIN = `${__dirname}/../../assets/IconWin.png`;
 const ICON_MAC = `${__dirname}/../../assets/IconTemplate.png`;
@@ -217,6 +219,15 @@ function getMenu(): Menu {
     { visible: process.platform === 'linux', type: 'separator' },
     ...instancesMenu,
     ...quickActionsMenu,
+    {
+      label: `🧠 AI Features${getDigest().length ? ` (${getDigest().length} routine)` : ''}`,
+      // Only relevant once a TypeSafe key has been saved in Settings.
+      visible: isTypeSafeConfigured(),
+      submenu: [
+        { label: 'Choose a Scene...', click: () => _openSettingsWindow() },
+        { label: `Routine Notifications (${getDigest().length})`, click: () => _openSettingsWindow() },
+      ],
+    },
     { type: 'separator' },
     {
       label: 'Hover to Show',

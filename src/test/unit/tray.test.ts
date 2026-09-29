@@ -166,6 +166,23 @@ describe('tray', () => {
   });
 
   describe('getMenu', () => {
+    const aiMenu = () =>
+      (vi.mocked(Menu.buildFromTemplate).mock.calls.at(-1)![0] as any[]).find((item: any) =>
+        item.label?.includes('AI Features')
+      );
+
+    test('hides the AI menu until a TypeSafe key is saved', () => {
+      vi.mocked(config.get).mockImplementation((key: string) => (key === 'allInstances' ? [] : undefined));
+      getMenu();
+      expect(aiMenu().visible).toBe(false);
+
+      vi.mocked(config.get).mockImplementation((key: string) =>
+        key === 'allInstances' ? [] : key === 'typeSafeApiKey' ? 'key' : undefined
+      );
+      getMenu();
+      expect(aiMenu().visible).toBe(true);
+    });
+
     test('builds a menu with status and quit items', () => {
       const menu = getMenu();
       expect(Menu.buildFromTemplate).toHaveBeenCalled();

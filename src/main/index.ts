@@ -74,6 +74,7 @@ async function initializeApp(): Promise<void> {
     forceQuit: () => {
       forceQuit = true;
     },
+    refreshTrayMenu: () => refreshMenu(),
   });
 
   const isFirstRun = !config.has('currentInstance');

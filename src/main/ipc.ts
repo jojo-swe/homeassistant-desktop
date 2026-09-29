@@ -10,6 +10,9 @@ import { execute as executeCommand } from './commandReceiver';
 import * as shortcutManager from './shortcutManager';
 import * as sensorPusher from './sensorPusher';
 import { isHttpUrl, isInstanceUrl, isLocalAppUrl } from './urlSafety';
+import { getSettingsWindow } from './settingsWindow';
+import { suggestScene, activateScene } from './sceneSelector';
+import { routeNotification, getDigest, clearDigest } from './smartNotifications';
 import type { HAEntity, IpcRegisterDeps, SaveSettingsResult, TestConnectionResult } from './types';
 
 type SenderEvent = Pick<IpcMainEvent | IpcMainInvokeEvent, 'senderFrame'>;
@@ -54,7 +57,13 @@ function registerAll(deps: IpcRegisterDeps): void {
     currentInstance,
     bonjour,
     forceQuit,
+    refreshTrayMenu,
   } = deps;
+
+  const isSettingsSender = (event: Electron.IpcMainInvokeEvent): boolean => {
+    const settings = getSettingsWindow();
+    return !!settings && event.sender === settings.webContents;
+  };
 
   onLocal('get-instances', (event) => {
     event.reply('get-instances', config.get('allInstances') || []);
@@ -104,9 +113,19 @@ function registerAll(deps: IpcRegisterDeps): void {
   });
 
   // Sent by the bridge injected into the Home Assistant page, so the instance origin is allowed too.
-  ipcMain.on('ha-notification', (event, { title, message }: { title: string; message: string }) => {
+  ipcMain.on('ha-notification', (event, data: { title?: unknown; message?: unknown }) => {
     if (!isTrustedSender(event, 'ha-notification', true)) return;
-    showNotification(title, message, () => showWindow());
+    if (!data || typeof data.title !== 'string' || typeof data.message !== 'string') return;
+    const { title, message } = data as { title: string; message: string };
+    void routeNotification(
+      title,
+      message,
+      () => showNotification(title, message, () => showWindow()),
+      () => {
+        getSettingsWindow()?.webContents.send('notification-digest-updated', getDigest());
+        refreshTrayMenu();
+      }
+    );
   });
 
   ipcMain.on(
@@ -140,6 +159,9 @@ function registerAll(deps: IpcRegisterDeps): void {
       pinnedEntities: config.get('pinnedEntities') || [],
       theme: config.get('theme') || 'dark',
       accentColor: config.get('accentColor') || '',
+      typeSafeKeyConfigured: !!config.get('typeSafeApiKey'),
+      smartNotificationsEnabled: config.get('smartNotificationsEnabled') || false,
+      notificationDigest: getDigest(),
     });
     const entities = getCachedEntities();
     if (entities.length) event.reply('entities-loaded', entities);
@@ -185,6 +207,44 @@ function registerAll(deps: IpcRegisterDeps): void {
     } catch (err) {
       return { ok: false, error: (err as Error).message };
     }
+  });
+
+  handleLocal('save-typesafe-settings', async (event, data: unknown) => {
+    if (!isSettingsSender(event)) return { ok: false, error: 'Settings window required.' };
+    if (!data || typeof data !== 'object') return { ok: false, error: 'Invalid settings.' };
+    const { apiKey, enabled, clearKey } = data as Record<string, unknown>;
+    if (typeof enabled !== 'boolean' || typeof clearKey !== 'boolean' || typeof apiKey !== 'string') {
+      return { ok: false, error: 'Invalid settings.' };
+    }
+    if (apiKey.length > 500) return { ok: false, error: 'API key is too long.' };
+    if (clearKey) config.set('typeSafeApiKey', '');
+    else if (apiKey.trim()) config.set('typeSafeApiKey', apiKey.trim());
+    config.set('smartNotificationsEnabled', enabled && !!config.get('typeSafeApiKey'));
+    refreshTrayMenu();
+    return {
+      ok: true,
+      typeSafeKeyConfigured: !!config.get('typeSafeApiKey'),
+      smartNotificationsEnabled: config.get('smartNotificationsEnabled'),
+    };
+  });
+
+  handleLocal('suggest-scene', async (event, request: unknown) => {
+    if (!isSettingsSender(event)) return { ok: false, error: 'Settings window required.' };
+    if (typeof request !== 'string') return { ok: false, error: 'Invalid request.' };
+    return suggestScene(request);
+  });
+
+  handleLocal('activate-scene', async (event, sceneId: unknown) => {
+    if (!isSettingsSender(event)) return { ok: false, error: 'Settings window required.' };
+    if (typeof sceneId !== 'string') return { ok: false, error: 'Invalid scene.' };
+    return activateScene(sceneId);
+  });
+
+  handleLocal('clear-notification-digest', async (event) => {
+    if (!isSettingsSender(event)) return { ok: false };
+    clearDigest();
+    refreshTrayMenu();
+    return { ok: true };
   });
 
   handleLocal('save-pinned', async (_event, pinnedEntities: unknown) => {

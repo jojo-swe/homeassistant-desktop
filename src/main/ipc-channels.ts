@@ -17,6 +17,7 @@ export const REPLY_CHANNELS = [
   'bonjour-instance',
   'settings-loaded',
   'entities-loaded',
+  'notification-digest-updated',
 ] as const;
 
 export const INVOKE_CHANNELS = [
@@ -31,6 +32,10 @@ export const INVOKE_CHANNELS = [
   'remove-shortcut',
   'export-config',
   'import-config',
+  'save-typesafe-settings',
+  'suggest-scene',
+  'activate-scene',
+  'clear-notification-digest',
 ] as const;
 
 export type SendChannel = (typeof SEND_CHANNELS)[number];

@@ -12,14 +12,27 @@ export interface TestFixture {
   appConfig: Record<string, unknown> | undefined;
   process: ChildProcess;
   page: Page;
+  debugPort: number;
 }
 
 // In a Node context the `electron` package exports the platform-specific binary path.
 const ELECTRON_BIN = electronPath as unknown as string;
 const APP_ENTRY = path.join(__dirname, '../../..', 'out/main/index.js');
-const DEBUG_PORT = 9222;
 
-async function waitForPort(port: number, timeoutMs = 30000): Promise<void> {
+async function findAvailablePort(): Promise<number> {
+  const server = net.createServer();
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const address = server.address();
+  const port = address && typeof address !== 'string' ? address.port : 0;
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  if (!port) throw new Error('Could not allocate an Electron debug port.');
+  return port;
+}
+
+async function waitForPort(port: number, child: ChildProcess, timeoutMs = 30000): Promise<void> {
   const start = Date.now();
   return new Promise((resolve, reject) => {
     function tryConnect() {
@@ -28,6 +41,14 @@ async function waitForPort(port: number, timeoutMs = 30000): Promise<void> {
         resolve();
       });
       socket.on('error', () => {
+        if (child.exitCode !== null || child.signalCode !== null) {
+          reject(
+            new Error(
+              `Electron exited before debug port ${port} opened (code: ${child.exitCode}, signal: ${child.signalCode}).`
+            )
+          );
+          return;
+        }
         if (Date.now() - start > timeoutMs) {
           reject(new Error(`Port ${port} not ready after ${timeoutMs}ms`));
         } else {
@@ -53,8 +74,11 @@ async function stopApp(child: ChildProcess, graceMs = 5000): Promise<void> {
 }
 
 export const test = base.extend<TestFixture>({
+  debugPort: async ({}, use) => {
+    await use(await findAvailablePort());
+  },
   appConfig: [undefined, { option: true }],
-  process: async ({ appConfig }, use) => {
+  process: async ({ appConfig, debugPort }, use) => {
     // Chromium refuses to start as root (e.g. in containers) unless the sandbox is disabled.
     const sandboxArgs = process.getuid?.() === 0 ? ['--no-sandbox'] : [];
     // Fresh profile per test: config (electron-store) and localStorage both live under userData,
@@ -76,7 +100,7 @@ export const test = base.extend<TestFixture>({
       fs.mkdirSync(userData, { recursive: true });
       fs.writeFileSync(path.join(userData, 'config.json'), JSON.stringify(appConfig));
     }
-    const child = spawn(ELECTRON_BIN, [...sandboxArgs, `--remote-debugging-port=${DEBUG_PORT}`, APP_ENTRY], {
+    const child = spawn(ELECTRON_BIN, [...sandboxArgs, `--remote-debugging-port=${debugPort}`, APP_ENTRY], {
       cwd: path.join(__dirname, '../../..'),
       env: { ...process.env, ...profileEnv, NODE_ENV: 'test', ELECTRON_DISABLE_SECURITY_WARNINGS: 'true' },
       stdio: 'pipe',
@@ -92,13 +116,13 @@ export const test = base.extend<TestFixture>({
       }
     });
 
-    await waitForPort(DEBUG_PORT);
+    await waitForPort(debugPort, child);
     await use(child);
     await stopApp(child);
     fs.rmSync(profileDir, { recursive: true, force: true });
   },
-  page: async ({ process }, use) => {
-    const browser = await chromium.connectOverCDP(`http://127.0.0.1:${DEBUG_PORT}`);
+  page: async ({ process, debugPort }, use) => {
+    const browser = await chromium.connectOverCDP(`http://127.0.0.1:${debugPort}`);
     const contexts = browser.contexts();
     const ctx = contexts[0] || (await browser.newContext());
     const pages = ctx.pages();

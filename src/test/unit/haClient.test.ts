@@ -234,4 +234,15 @@ describe('haClient', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('activateScene', () => {
+    test('calls the Home Assistant scene service', async () => {
+      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => [] });
+      expect(await haClient.activateScene('scene.movie')).toBe(true);
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://ha.local:8123/api/services/scene/turn_on',
+        expect.objectContaining({ method: 'POST', body: JSON.stringify({ entity_id: 'scene.movie' }) })
+      );
+    });
+  });
 });

@@ -110,4 +110,9 @@ async function getState(entityId: string): Promise<HAState | null> {
   return result as HAState | null;
 }
 
-export { isConfigured, getToggleableEntities, toggle, getState, getStates, getStatesWithCredentials };
+async function activateScene(sceneId: string): Promise<boolean> {
+  const result = await fetchHA('services/scene/turn_on', 'POST', { entity_id: sceneId });
+  return result !== null;
+}
+
+export { isConfigured, getToggleableEntities, toggle, getState, getStates, getStatesWithCredentials, activateScene };

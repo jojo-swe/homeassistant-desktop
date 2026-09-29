@@ -18,6 +18,15 @@
     haBaseUrl?: string;
     haToken?: string;
     pinnedEntities?: string[];
+    typeSafeKeyConfigured?: boolean;
+    smartNotificationsEnabled?: boolean;
+    notificationDigest?: DigestItem[];
+  }
+
+  interface DigestItem {
+    title: string;
+    message: string;
+    receivedAt: string;
   }
 
   let allEntities: HAEntity[] = $state([]);
@@ -34,6 +43,17 @@
   let toastMsg = $state('');
   let toastVisible = $state(false);
   let toastOk = $state(false);
+  let typeSafeApiKey = $state('');
+  let typeSafeKeyConfigured = $state(false);
+  let smartNotificationsEnabled = $state(false);
+  let sceneRequest = $state('');
+  let suggestedScene = $state<{ sceneId: string; name: string } | null>(null);
+  let sceneStatus = $state('');
+  let sceneBusy = $state(false);
+  let sceneStatusError = $state(false);
+  // Bumped whenever the request changes, so a slow reply for an earlier request is ignored.
+  let sceneSearchId = 0;
+  let notificationDigest: DigestItem[] = $state([]);
 
   const PAGE_SIZE = 50;
   let currentPage = $state(0);
@@ -54,6 +74,9 @@
       haUrl = s.haBaseUrl || '';
       haToken = s.haToken || '';
       pinnedIds = s.pinnedEntities || [];
+      typeSafeKeyConfigured = !!s.typeSafeKeyConfigured;
+      smartNotificationsEnabled = !!s.smartNotificationsEnabled;
+      notificationDigest = s.notificationDigest || [];
       if (s.theme === 'light') {
         isLightTheme = true;
         document.documentElement.setAttribute('data-theme', 'light');
@@ -73,6 +96,10 @@
     window.api.on('entities-loaded', (entities: unknown) => {
       allEntities = entities as HAEntity[];
       renderEntityList(allEntities);
+    });
+
+    window.api.on('notification-digest-updated', (items: unknown) => {
+      notificationDigest = items as DigestItem[];
     });
 
     window.api.send('settings-open');
@@ -135,6 +162,84 @@
       haToken: haToken.trim(),
     })) as { ok: boolean; error?: string };
     showStatus(result.ok ? '✓ Connected!' : '✗ ' + (result.error || 'Failed'), result.ok);
+  }
+
+  async function saveTypeSafeSettings(clearKey = false): Promise<void> {
+    const result = (await window.api.invoke('save-typesafe-settings', {
+      apiKey: typeSafeApiKey,
+      enabled: smartNotificationsEnabled,
+      clearKey,
+    })) as { ok: boolean; error?: string; typeSafeKeyConfigured?: boolean; smartNotificationsEnabled?: boolean };
+    if (!result.ok) {
+      showToast(result.error || 'Could not save TypeSafe settings', false);
+      return;
+    }
+    typeSafeApiKey = '';
+    typeSafeKeyConfigured = !!result.typeSafeKeyConfigured;
+    smartNotificationsEnabled = !!result.smartNotificationsEnabled;
+    suggestedScene = null;
+    showToast(clearKey ? 'TypeSafe key removed' : 'TypeSafe settings saved', true);
+  }
+
+  function resetSceneSuggestion(): void {
+    sceneSearchId++;
+    suggestedScene = null;
+    sceneStatus = '';
+    sceneStatusError = false;
+  }
+
+  async function findScene(): Promise<void> {
+    const searchId = ++sceneSearchId;
+    sceneBusy = true;
+    suggestedScene = null;
+    sceneStatus = 'Finding a scene…';
+    sceneStatusError = false;
+    try {
+      const result = (await window.api.invoke('suggest-scene', sceneRequest)) as {
+        ok: boolean; sceneId?: string; name?: string; error?: string;
+      };
+      if (searchId !== sceneSearchId) return;
+      if (result.ok && result.sceneId && result.name) {
+        suggestedScene = { sceneId: result.sceneId, name: result.name };
+        sceneStatus = 'Review this scene before activating it.';
+      } else {
+        sceneStatus = result.error || 'No scene found.';
+        sceneStatusError = true;
+      }
+    } catch {
+      if (searchId !== sceneSearchId) return;
+      sceneStatus = 'Could not contact the scene selector.';
+      sceneStatusError = true;
+    } finally {
+      sceneBusy = false;
+    }
+  }
+
+  async function activateSuggestedScene(): Promise<void> {
+    const scene = suggestedScene;
+    if (!scene) return;
+    sceneBusy = true;
+    try {
+      const result = (await window.api.invoke('activate-scene', scene.sceneId)) as { ok: boolean; error?: string };
+      sceneStatus = result.ok ? `Activated ${scene.name}.` : result.error || 'Could not activate scene.';
+      sceneStatusError = !result.ok;
+      if (result.ok && suggestedScene === scene) suggestedScene = null;
+    } catch {
+      sceneStatus = 'Could not contact Home Assistant.';
+      sceneStatusError = true;
+    } finally {
+      sceneBusy = false;
+    }
+  }
+
+  async function clearNotificationDigest(): Promise<void> {
+    try {
+      const result = (await window.api.invoke('clear-notification-digest')) as { ok: boolean };
+      if (result.ok) notificationDigest = [];
+      else showToast('Could not clear the digest', false);
+    } catch {
+      showToast('Could not clear the digest', false);
+    }
   }
 
   function filterEntities(): void {
@@ -285,6 +390,46 @@
         <button class="btn btn-secondary" onclick={testConnection}>Test Only</button>
       </div>
     </div>
+  </div>
+
+  <div>
+    <div class="section-title">TypeSafe AI</div>
+    <p class="ai-help">TypeSafe evaluates scene requests and Home Assistant notification text in the cloud. Its key stays in this app's local settings and is omitted from config exports.</p>
+    <div class="field">
+      <label for="typeSafeApiKey">TypeSafe API key</label>
+      <input type="password" id="typeSafeApiKey" bind:value={typeSafeApiKey} placeholder={typeSafeKeyConfigured ? 'Key saved — enter a new one to replace it' : 'Enter your TypeSafe API key'} />
+    </div>
+    <div class="row ai-actions">
+      <button class="btn btn-primary" onclick={() => saveTypeSafeSettings()}>Save AI Settings</button>
+      {#if typeSafeKeyConfigured}<button class="btn btn-secondary" onclick={() => saveTypeSafeSettings(true)}>Remove Key</button>{/if}
+    </div>
+    <label class="ai-toggle"><input type="checkbox" bind:checked={smartNotificationsEnabled} /> Hold clearly routine notifications in a digest</label>
+    <p class="ai-help">Urgent or uncertain notifications still appear immediately. If TypeSafe is unavailable, notifications appear normally.</p>
+
+    <div class="section-title ai-subtitle">Choose a scene</div>
+    <div class="field">
+      <label for="sceneRequest">Describe the mood or activity</label>
+      <input type="text" id="sceneRequest" bind:value={sceneRequest} maxlength="500" placeholder="Make the living room cozy" oninput={resetSceneSuggestion} />
+    </div>
+    <div class="row ai-actions">
+      <button class="btn btn-secondary" onclick={findScene} disabled={sceneBusy || !sceneRequest.trim()}>Find Scene</button>
+      {#if suggestedScene}
+        <button class="btn btn-primary" onclick={activateSuggestedScene} disabled={sceneBusy}>Activate {suggestedScene.name}</button>
+      {/if}
+    </div>
+    <div class="scene-status-msg" class:visible={sceneStatus !== ''} class:error={sceneStatusError} aria-live="polite">{sceneStatus}</div>
+
+    <div class="section-title ai-subtitle">Routine notifications ({notificationDigest.length})</div>
+    {#if notificationDigest.length === 0}
+      <p class="ai-help">No routine notifications are waiting.</p>
+    {:else}
+      <div class="digest-list">
+        {#each notificationDigest as item, i (item.receivedAt + i)}
+          <div class="digest-item"><strong>{item.title}</strong><span>{item.message}</span><small>{new Date(item.receivedAt).toLocaleString()}</small></div>
+        {/each}
+      </div>
+      <button class="btn btn-secondary" onclick={clearNotificationDigest}>Clear Digest</button>
+    {/if}
   </div>
 
   <div>
@@ -463,6 +608,14 @@
     color: var(--text-muted);
     margin-bottom: 8px;
   }
+
+  .ai-help { font-size: 12px; color: var(--text-muted); margin: 0 0 10px; }
+  .ai-actions { margin: 10px 0; flex-wrap: wrap; }
+  .ai-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text); }
+  .ai-subtitle { margin-top: 16px; }
+  .digest-list { max-height: 180px; overflow-y: auto; margin-bottom: 8px; }
+  .digest-item { display: flex; flex-direction: column; gap: 3px; padding: 8px; border-bottom: 1px solid var(--border); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .digest-item small { color: var(--text-muted); }
 
   .row {
     display: flex;

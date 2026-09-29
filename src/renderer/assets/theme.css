@@ -241,7 +241,8 @@ body {
 
 /* ── Status messages ────────────────────────────────────────────────────────── */
 
-.status-msg {
+.status-msg,
+.scene-status-msg {
   font-size: 12px;
   padding: 8px 12px;
   border-radius: 8px;
@@ -256,6 +257,16 @@ body {
   background: rgba(239, 83, 80, 0.15);
   color: var(--danger);
   display: block;
+}
+/* Scene status is a live region that stays in the DOM; Settings adds .visible while it has text. */
+.scene-status-msg.visible {
+  display: block;
+  background: var(--ha-blue-light);
+  color: var(--text);
+}
+.scene-status-msg.visible.error {
+  background: rgba(239, 83, 80, 0.15);
+  color: var(--danger);
 }
 
 /* ── Focus visible (keyboard navigation) ───────────────────────────────────── */
