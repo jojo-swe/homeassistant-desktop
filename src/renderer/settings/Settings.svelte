@@ -233,8 +233,13 @@
   }
 
   async function clearNotificationDigest(): Promise<void> {
-    const result = (await window.api.invoke('clear-notification-digest')) as { ok: boolean };
-    if (result.ok) notificationDigest = [];
+    try {
+      const result = (await window.api.invoke('clear-notification-digest')) as { ok: boolean };
+      if (result.ok) notificationDigest = [];
+      else showToast('Could not clear the digest', false);
+    } catch {
+      showToast('Could not clear the digest', false);
+    }
   }
 
   function filterEntities(): void {
