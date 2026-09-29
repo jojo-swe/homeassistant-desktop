@@ -170,8 +170,8 @@ Two features use the [TypeSafe](https://console.typesafe.ai/) API. Both are off 
 - **Routine notification digest**: when enabled, each new persistent notification is classified first. Clearly
   routine ones ("laundry finished") are collected in the digest in Settings instead of popping up. Anything
   urgent or uncertain, very long messages, and every case where TypeSafe can't be reached still appear as native
-  notifications immediately. The digest is kept in memory only; the notifications themselves stay in Home
-  Assistant.
+  notifications immediately. The digest holds up to 50 items; once it is full, new routine notifications appear
+  normally until you clear it. It is kept in memory only; the notifications themselves stay in Home Assistant.
 
 **What is sent to TypeSafe:** for a scene request, your request text and the names and entity IDs of your
 scenes; for the digest, the title and text of each new persistent notification. Nothing is sent while the

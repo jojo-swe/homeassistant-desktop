@@ -61,4 +61,28 @@ describe('smartNotifications', () => {
     expect(show).not.toHaveBeenCalled();
     expect(getDigest()).toHaveLength(1);
   });
+
+  test('shows an item instead of refilling a digest cleared while it was being classified', async () => {
+    let answer!: (value: unknown) => void;
+    vi.mocked(evaluate).mockReturnValue(new Promise((resolve) => (answer = resolve)) as never);
+    const show = vi.fn();
+    const pending = routeNotification('Laundry', 'Finished', show, vi.fn());
+    clearDigest();
+    answer({ answers: { needs_immediate_attention: { type: 'noul', noul: 0.01 } } });
+    await pending;
+    expect(getDigest()).toEqual([]);
+    expect(show).toHaveBeenCalledOnce();
+  });
+
+  test('shows new routine items once the digest is full instead of dropping older ones', async () => {
+    vi.mocked(evaluate).mockResolvedValue({ answers: { needs_immediate_attention: { type: 'noul', noul: 0.01 } } });
+    const show = vi.fn();
+    for (let i = 0; i < 50; i++) await routeNotification(`Item ${i}`, 'Done', show, vi.fn());
+    expect(show).not.toHaveBeenCalled();
+    await routeNotification('Item 50', 'Done', show, vi.fn());
+    expect(show).toHaveBeenCalledOnce();
+    const digest = getDigest();
+    expect(digest).toHaveLength(50);
+    expect(digest.at(-1)?.title).toBe('Item 0');
+  });
 });

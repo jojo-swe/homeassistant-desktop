@@ -7,7 +7,10 @@ interface DigestItem {
   receivedAt: string;
 }
 
+const MAX_DIGEST_ITEMS = 50;
 const digest: DigestItem[] = [];
+// Bumped by clearDigest, so a classification that was in flight during a clear doesn't refill the list.
+let digestGeneration = 0;
 
 async function routeNotification(
   title: string,
@@ -25,6 +28,7 @@ async function routeNotification(
     return;
   }
 
+  const generation = digestGeneration;
   try {
     const result = await evaluate(
       { title, message },
@@ -54,8 +58,13 @@ async function routeNotification(
       showNow();
       return;
     }
+    // Never drop a held item to make room, and never refill a digest cleared while this was classified:
+    // show the notification instead, so it is not lost either way.
+    if (generation !== digestGeneration || digest.length >= MAX_DIGEST_ITEMS) {
+      showNow();
+      return;
+    }
     digest.unshift({ title, message, receivedAt: new Date().toISOString() });
-    digest.splice(50);
     try {
       onDigestUpdated();
     } catch {
@@ -73,6 +82,7 @@ function getDigest(): DigestItem[] {
 
 function clearDigest(): void {
   digest.length = 0;
+  digestGeneration++;
 }
 
 export { routeNotification, getDigest, clearDigest };
