@@ -68,6 +68,9 @@
     "vite": "^6.4.3",
     "vitest": "^3.2.7"
   },
+  "overrides": {
+    "fast-uri": "3.1.7"
+  },
   "engines": {
     "node": ">= 20"
   },
