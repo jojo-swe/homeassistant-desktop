@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-09-28
+## [2.0.0] - 2026-10-25
 
 First stable release of the 2.x "Liquid Glass" line. It includes everything from
 [2.0.0-beta.1](https://github.com/jojo-swe/homeassistant-desktop/releases/tag/v2.0.0-beta.1)
@@ -38,6 +38,8 @@ plus fixes for problems found in a pre-release review. Several would have affect
 - **Safe external links.** Only `http(s)` and `mailto` URLs are handed to the OS. Schemes such as
   `smb:` or `ms-*` can launch programs on Windows.
 - Settings import rejects instance URLs that aren't `http(s)`; pinned-entity input is validated.
+- Electron 43.8.3, including the fix for HID and USB permission checks being attributed to the wrong origin, and the other Electron 43 security fixes through 43.8.0.
+- Settings storage and the auto-updater ship patched copies of fast-uri and js-yaml.
 
 ### Fixed
 
@@ -80,6 +82,8 @@ plus fixes for problems found in a pre-release review. Several would have affect
 - CI runs lint and format checks and uses `npm ci`. Action versions are aligned.
 - Added `CLAUDE.md`, `docs/walkthrough.md` (sensors, notifications, commands) and a SessionStart hook
   for Claude Code on the web.
+- Test and build dependencies with known vulnerabilities are updated, including the Vitest upgrade that
+  removes tinypool.
 
 ## [2.0.0-beta.1] - 2026-07-09
 
