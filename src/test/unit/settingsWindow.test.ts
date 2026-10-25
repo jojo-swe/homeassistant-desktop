@@ -13,7 +13,9 @@ vi.mock('electron', () => {
     },
   };
   return {
-    BrowserWindow: vi.fn(() => mockWindow),
+    BrowserWindow: vi.fn(function BrowserWindow() {
+      return mockWindow;
+    }),
   };
 });
 
