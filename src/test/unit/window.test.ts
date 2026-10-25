@@ -34,7 +34,9 @@ const mockBrowserWindow = {
 
 vi.mock('electron', () => ({
   BrowserWindow: Object.assign(
-    vi.fn(() => mockBrowserWindow),
+    vi.fn(function BrowserWindow() {
+      return mockBrowserWindow;
+    }),
     {
       getAllWindows: vi.fn(() => [mockBrowserWindow]),
     }

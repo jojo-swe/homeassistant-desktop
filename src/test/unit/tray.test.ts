@@ -10,7 +10,9 @@ const mockTray = {
 const mockMenu = { items: [] };
 
 vi.mock('electron', () => ({
-  Tray: vi.fn(() => mockTray),
+  Tray: vi.fn(function Tray() {
+    return mockTray;
+  }),
   Menu: {
     buildFromTemplate: vi.fn((template) => ({ ...mockMenu, template })),
   },

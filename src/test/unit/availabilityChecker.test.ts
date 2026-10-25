@@ -7,9 +7,11 @@ vi.mock('electron', () => ({
 }));
 
 vi.mock('bonjour-service', () => ({
-  Bonjour: vi.fn(() => ({
-    find: vi.fn(),
-  })),
+  Bonjour: vi.fn(function Bonjour() {
+    return {
+      find: vi.fn(),
+    };
+  }),
 }));
 
 vi.mock('electron-log', () => ({
