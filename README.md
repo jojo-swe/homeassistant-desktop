@@ -6,7 +6,13 @@ A modern Desktop App (Windows / macOS / Linux) for [Home Assistant](https://www.
 
 This fork radically improves application security via context isolation, adds rich two-way native OS integrations, and ships a **v2.0 "Liquid Glass" graphical overhaul** — translucent, layered surfaces with real-time backdrop blur, depth-based hierarchy, and adaptive theming.
 
-![Home Assistant - Desktop](https://raw.githubusercontent.com/jojo-swe/homeassistant-desktop/master/media/screenshot.png)
+![Home Assistant Desktop showing a local demo dashboard](media/screenshot.png)
+
+v2 Liquid Glass onboarding and settings:
+
+![Connect screen with a discovered local demo instance](media/onboarding.png)
+
+![Settings after a successful connection test](media/settings.png)
 
 ## Project status & disclaimer
 
