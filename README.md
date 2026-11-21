@@ -8,6 +8,16 @@ This fork radically improves application security via context isolation, adds ri
 
 ![Home Assistant - Desktop](https://raw.githubusercontent.com/jojo-swe/homeassistant-desktop/master/media/screenshot.png)
 
+## Project status & disclaimer
+
+This is a personal hobby fork. It is maintained in spare time and developed when there is time and energy. There is no schedule, no roadmap promises, and no commitment to provide support.
+
+The software is provided **AS IS**. There are no guarantees or warranties of any kind, including for functionality, security, compatibility, updates, or fixes. You use it entirely at your own risk.
+
+Issues and pull requests are welcome. They may go unanswered, or it may take a long time before there is a reply.
+
+Formal terms are in [LICENSE.md](LICENSE.md) (Apache License, Version 2.0).
+
 ## ✨ Features
 
 ### Core
